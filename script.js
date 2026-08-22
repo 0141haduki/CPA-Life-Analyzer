@@ -1,6 +1,6 @@
-// CPA Life Analyzer v2.1
+// CPA Life Analyzer v2.4
 
-console.log("CPA Life Analyzer v2.1 起動");
+console.log("CPA Life Analyzer v2.4 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
@@ -32,6 +32,14 @@ function getTodayString() {
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+}
+
+// 現在時刻を HH:MM 形式で取得
+function getCurrentTimeString() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
 }
 
 // 全記録を取得
@@ -80,7 +88,7 @@ function setFormData(data) {
         }
     });
 
-    updateSleepSummary();
+    updateAllCalculatedDisplays();
 }
 
 // 入力欄を空にする
@@ -93,7 +101,7 @@ function clearForm() {
         }
     });
 
-    updateSleepSummary();
+    updateAllCalculatedDisplays();
 }
 
 // 現在の日付のデータを保存
@@ -114,9 +122,18 @@ function saveCurrentRecord() {
 
     currentDate = date;
 
-    updateSleepSummary();
-    updateSaveStatus(`保存しました：${date}`);
+    updateAllCalculatedDisplays();
+
+    const warnings = validateCurrentRecord();
+
+    if (warnings.length > 0) {
+        updateSaveStatus(`保存しました：${date} ${getCurrentTimeString()}　※確認あり`, true);
+    } else {
+        updateSaveStatus(`保存しました：${date} ${getCurrentTimeString()}`, false);
+    }
+
     renderHistory();
+    updateDeleteButton();
 
     console.log("保存しました", date, records[date]);
 }
@@ -129,24 +146,34 @@ function loadRecord(date) {
 
     if (records[date]) {
         setFormData(records[date]);
-        updateSaveStatus(`読み込みました：${date}`);
+        updateSaveStatus(`読み込みました：${date}`, false);
     } else {
-        updateSaveStatus(`新しい記録です：${date}`);
+        updateSaveStatus(`新しい記録です：${date}`, false);
     }
 
     localStorage.setItem(LAST_DATE_KEY, date);
     currentDate = date;
 
-    updateSleepSummary();
+    updateAllCalculatedDisplays();
     renderHistory();
+    updateDeleteButton();
 }
 
 // 保存状態を表示
-function updateSaveStatus(message) {
+function updateSaveStatus(message, hasWarning) {
     const status = document.getElementById("saveStatus");
+    const statusCard = document.querySelector(".status-card");
 
     if (status) {
         status.textContent = message;
+    }
+
+    if (statusCard) {
+        if (hasWarning) {
+            statusCard.classList.add("warning");
+        } else {
+            statusCard.classList.remove("warning");
+        }
     }
 }
 
@@ -191,16 +218,37 @@ function calculateTimeInBedHours(bedtime, wakeTime) {
     return diffMinutes / 60;
 }
 
-// 睡眠サマリーを更新
-function updateSleepSummary() {
+// 睡眠効率を計算
+function calculateSleepEfficiency() {
     const bedtime = document.getElementById("bedtime")?.value;
     const wakeTime = document.getElementById("wakeTime")?.value;
     const sleepHoursText = document.getElementById("sleepHours")?.value;
 
+    const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+    const sleepHours = Number(sleepHoursText);
+
+    if (
+        timeInBedHours === null ||
+        !sleepHoursText ||
+        Number.isNaN(sleepHours) ||
+        sleepHours <= 0 ||
+        timeInBedHours <= 0
+    ) {
+        return null;
+    }
+
+    return sleepHours / timeInBedHours * 100;
+}
+
+// 睡眠サマリーを更新
+function updateSleepSummary() {
+    const bedtime = document.getElementById("bedtime")?.value;
+    const wakeTime = document.getElementById("wakeTime")?.value;
     const timeInBedElement = document.getElementById("timeInBed");
     const efficiencyElement = document.getElementById("sleepEfficiency");
 
     const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+    const efficiency = calculateSleepEfficiency();
 
     if (timeInBedElement) {
         if (timeInBedHours === null) {
@@ -211,27 +259,157 @@ function updateSleepSummary() {
     }
 
     if (efficiencyElement) {
-        const sleepHours = Number(sleepHoursText);
+        efficiencyElement.classList.remove("warning", "danger");
 
-        if (
-            timeInBedHours === null ||
-            !sleepHoursText ||
-            Number.isNaN(sleepHours) ||
-            sleepHours <= 0 ||
-            timeInBedHours <= 0
-        ) {
+        if (efficiency === null) {
             efficiencyElement.textContent = "未計算";
             return;
         }
 
-        const efficiency = sleepHours / timeInBedHours * 100;
-
         if (efficiency > 100) {
             efficiencyElement.textContent = `${efficiency.toFixed(1)}% 要確認`;
+            efficiencyElement.classList.add("danger");
+        } else if (efficiency < 70) {
+            efficiencyElement.textContent = `${efficiency.toFixed(1)}% 低め`;
+            efficiencyElement.classList.add("warning");
         } else {
             efficiencyElement.textContent = `${efficiency.toFixed(1)}%`;
         }
     }
+}
+
+// 数値入力の範囲チェック
+function checkRange(valueText, label, min, max) {
+    const warnings = [];
+
+    if (valueText === "") {
+        return warnings;
+    }
+
+    const value = Number(valueText);
+
+    if (Number.isNaN(value)) {
+        warnings.push(`${label}は数値で入力してください`);
+        return warnings;
+    }
+
+    if (value < min || value > max) {
+        warnings.push(`${label}は${min}〜${max}で入力してください`);
+    }
+
+    return warnings;
+}
+
+// 現在の入力内容をチェック
+function validateCurrentRecord() {
+    const warnings = [];
+
+    const bedtime = document.getElementById("bedtime")?.value;
+    const wakeTime = document.getElementById("wakeTime")?.value;
+    const sleepHoursText = document.getElementById("sleepHours")?.value;
+    const awakeCountText = document.getElementById("awakeCount")?.value;
+    const moodText = document.getElementById("mood")?.value;
+    const sleepinessText = document.getElementById("sleepiness")?.value;
+    const fatigueText = document.getElementById("fatigue")?.value;
+    const focusText = document.getElementById("focus")?.value;
+    const studyTotalText = document.getElementById("studyTotal")?.value;
+
+    const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+    const sleepHours = Number(sleepHoursText);
+    const awakeCount = Number(awakeCountText);
+    const studyTotal = Number(studyTotalText);
+
+    if (sleepHoursText !== "") {
+        if (Number.isNaN(sleepHours)) {
+            warnings.push("実睡眠時間は数値で入力してください");
+        } else {
+            if (sleepHours < 0) {
+                warnings.push("実睡眠時間は0以上で入力してください");
+            }
+
+            if (sleepHours > 16) {
+                warnings.push("実睡眠時間が16時間を超えています。入力値を確認してください");
+            }
+
+            if (timeInBedHours !== null && sleepHours > timeInBedHours) {
+                warnings.push("実睡眠時間が在床時間を超えています。入力値を確認してください");
+            }
+        }
+    }
+
+    if (awakeCountText !== "") {
+        if (Number.isNaN(awakeCount)) {
+            warnings.push("覚醒回数は数値で入力してください");
+        } else if (awakeCount < 0) {
+            warnings.push("覚醒回数は0以上で入力してください");
+        } else if (awakeCount > 20) {
+            warnings.push("覚醒回数が20回を超えています。入力値を確認してください");
+        }
+    }
+
+    warnings.push(...checkRange(moodText, "気分", 1, 10));
+    warnings.push(...checkRange(sleepinessText, "眠気", 1, 10));
+    warnings.push(...checkRange(fatigueText, "疲労", 1, 10));
+    warnings.push(...checkRange(focusText, "集中力", 1, 10));
+
+    if (studyTotalText !== "") {
+        if (Number.isNaN(studyTotal)) {
+            warnings.push("総勉強時間は数値で入力してください");
+        } else {
+            if (studyTotal < 0) {
+                warnings.push("総勉強時間は0分以上で入力してください");
+            }
+
+            if (studyTotal > 960) {
+                warnings.push("総勉強時間が16時間を超えています。入力値を確認してください");
+            }
+        }
+    }
+
+    return warnings;
+}
+
+// 入力チェック欄を更新
+function updateWarnings() {
+    const warningList = document.getElementById("warningList");
+    const warningCard = document.getElementById("warningCard");
+
+    if (!warningList) {
+        return;
+    }
+
+    const warnings = validateCurrentRecord();
+
+    warningList.innerHTML = "";
+
+    if (warnings.length === 0) {
+        const item = document.createElement("li");
+        item.className = "empty";
+        item.textContent = "問題は見つかっていません";
+        warningList.appendChild(item);
+
+        if (warningCard) {
+            warningCard.classList.add("ok");
+        }
+
+        return;
+    }
+
+    if (warningCard) {
+        warningCard.classList.remove("ok");
+    }
+
+    warnings.forEach(message => {
+        const item = document.createElement("li");
+        item.textContent = message;
+        warningList.appendChild(item);
+    });
+}
+
+// 計算表示をまとめて更新
+function updateAllCalculatedDisplays() {
+    updateSleepSummary();
+    updateWarnings();
 }
 
 // 履歴一覧を表示
@@ -265,15 +443,37 @@ function renderHistory() {
 
         const record = records[date];
 
+        const bedtime = record.bedtime || "";
+        const wakeTime = record.wakeTime || "";
+        const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+        const sleepHoursText = record.sleepHours || "";
+        const sleepHours = Number(sleepHoursText);
+
+        let efficiencyText = "効率 未計算";
+
+        if (
+            timeInBedHours !== null &&
+            sleepHoursText !== "" &&
+            !Number.isNaN(sleepHours) &&
+            sleepHours > 0
+        ) {
+            const efficiency = sleepHours / timeInBedHours * 100;
+            efficiencyText = `効率 ${efficiency.toFixed(1)}%`;
+        }
+
         const sleepText = record.sleepHours
-            ? `実睡眠 ${record.sleepHours}時間`
+            ? `実睡眠 ${record.sleepHours}h`
             : "実睡眠 未入力";
 
         const studyText = record.studyTotal
             ? `勉強 ${record.studyTotal}分`
             : "勉強 未入力";
 
-        button.textContent = `${date}　${sleepText}　${studyText}`;
+        const workText = record.workType
+            ? `勤務 ${record.workType}`
+            : "勤務 未入力";
+
+        button.textContent = `${date}　${sleepText}　${efficiencyText}　${studyText}　${workText}`;
 
         button.addEventListener("click", () => {
             const dateElement = document.getElementById("recordDate");
@@ -287,6 +487,57 @@ function renderHistory() {
 
         historyList.appendChild(button);
     });
+}
+
+// 削除ボタンの状態を更新
+function updateDeleteButton() {
+    const button = document.getElementById("deleteRecordButton");
+    const dateElement = document.getElementById("recordDate");
+
+    if (!button || !dateElement) {
+        return;
+    }
+
+    const records = getRecords();
+    const date = dateElement.value;
+
+    button.disabled = !records[date];
+}
+
+// 現在の日付の記録を削除
+function deleteCurrentRecord() {
+    const dateElement = document.getElementById("recordDate");
+
+    if (!dateElement || !dateElement.value) {
+        return;
+    }
+
+    const date = dateElement.value;
+    const records = getRecords();
+
+    if (!records[date]) {
+        updateSaveStatus(`削除する記録がありません：${date}`, false);
+        return;
+    }
+
+    const confirmed = window.confirm(`${date} の記録を削除しますか？`);
+
+    if (!confirmed) {
+        return;
+    }
+
+    delete records[date];
+    setRecords(records);
+
+    clearForm();
+    currentDate = date;
+    localStorage.setItem(LAST_DATE_KEY, date);
+
+    updateSaveStatus(`削除しました：${date}`, false);
+    renderHistory();
+    updateDeleteButton();
+
+    console.log("削除しました", date);
 }
 
 // 入力イベントを設定
@@ -320,6 +571,17 @@ function setupDateEvent() {
     });
 }
 
+// 削除イベントを設定
+function setupDeleteEvent() {
+    const button = document.getElementById("deleteRecordButton");
+
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener("click", deleteCurrentRecord);
+}
+
 // 初期化
 window.addEventListener("load", () => {
     const dateElement = document.getElementById("recordDate");
@@ -338,6 +600,8 @@ window.addEventListener("load", () => {
     loadRecord(startDate);
     setupInputEvents();
     setupDateEvent();
+    setupDeleteEvent();
+    updateDeleteButton();
 
     console.log("初期化完了");
 });

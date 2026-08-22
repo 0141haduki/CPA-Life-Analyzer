@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v2.1</title>
+    <title>CPA Life Analyzer v2.4</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -116,9 +116,26 @@
             <textarea id="memo" rows="5" placeholder="例：夜に眠気が強かった。企業法を少し進めた。"></textarea>
         </section>
 
+        <section class="card warning-card" id="warningCard">
+            <h2>⚠ 入力チェック</h2>
+            <ul id="warningList">
+                <li class="empty">問題は見つかっていません</li>
+            </ul>
+        </section>
+
         <section class="card status-card">
             <h2>💾 保存状態</h2>
             <p id="saveStatus">まだ保存していません</p>
+        </section>
+
+        <section class="card danger-card">
+            <h2>🗑 記録の削除</h2>
+            <p class="hint">
+                現在選択している日付の記録だけを削除します。削除前に確認画面が出ます。
+            </p>
+            <button id="deleteRecordButton" class="danger-button">
+                この日の記録を削除
+            </button>
         </section>
 
         <section class="card">
@@ -131,7 +148,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v2.1</p>
+        <p>CPA Life Analyzer v2.4</p>
     </footer>
 
     <script src="script.js"></script>

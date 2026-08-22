@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v2.1 */
+/* CPA Life Analyzer v2.4 */
 
 * {
     box-sizing: border-box;
@@ -112,14 +112,52 @@ textarea {
     color: #1e293b;
 }
 
+.summary-value.warning {
+    color: #b45309;
+}
+
+.summary-value.danger {
+    color: #b91c1c;
+}
+
 .hint {
     margin: 12px 0 0;
     font-size: 13px;
     color: #64748b;
 }
 
+/* 入力チェック */
+.warning-card {
+    border-left: 5px solid #f59e0b;
+}
+
+.warning-card.ok {
+    border-left-color: #16a34a;
+}
+
+#warningList {
+    margin: 0;
+    padding-left: 20px;
+}
+
+#warningList li {
+    margin-bottom: 6px;
+    color: #92400e;
+    font-weight: 600;
+}
+
+#warningList li.empty {
+    color: #15803d;
+    font-weight: 600;
+}
+
+/* 保存状態 */
 .status-card {
     border-left: 5px solid #2563eb;
+}
+
+.status-card.warning {
+    border-left-color: #f59e0b;
 }
 
 #saveStatus {
@@ -128,6 +166,38 @@ textarea {
     color: #2563eb;
 }
 
+.status-card.warning #saveStatus {
+    color: #92400e;
+}
+
+/* 削除 */
+.danger-card {
+    border-left: 5px solid #dc2626;
+}
+
+.danger-button {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #dc2626;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.danger-button:hover {
+    background: #b91c1c;
+}
+
+.danger-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* 履歴 */
 .history-list {
     display: flex;
     flex-direction: column;
