@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v2.11</title>
+    <title>CPA Life Analyzer v3.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -24,104 +24,26 @@
             <input type="date" id="recordDate">
         </section>
 
-        <section class="card settings-card">
-            <h2>⚙ 基本睡眠予定</h2>
+        <section class="card advice-card">
+            <h2>🧭 今日のアドバイス</h2>
 
-            <p class="hint">
-                毎日の予定就寝・予定起床の初期値になります。夜勤用なら 12:00〜19:00 のように設定できます。
+            <p id="todayAdviceMain" class="advice-main">
+                記録を入力すると、今日の動き方の目安を表示します。
             </p>
 
-            <label for="defaultPlannedBedtime">基本予定就寝時刻</label>
-            <input type="time" id="defaultPlannedBedtime">
+            <ul id="todayAdviceList" class="advice-list">
+                <li>まずは睡眠実績、体調、勉強時間を入力してください。</li>
+            </ul>
 
-            <label for="defaultPlannedWakeTime">基本予定起床時刻</label>
-            <input type="time" id="defaultPlannedWakeTime">
-
-            <button id="saveSettingsButton" class="primary-button">
-                基本睡眠予定を保存
-            </button>
-
-            <p id="settingsStatus" class="small-status">未設定</p>
-        </section>
-
-        <section class="card calendar-card">
-            <h2>🗓 直近30日の記録状況</h2>
-
-            <div class="calendar-legend">
-                <span><span class="legend-dot full"></span>十分記録あり</span>
-                <span><span class="legend-dot partial"></span>一部記録あり</span>
-                <span><span class="legend-dot empty-day"></span>記録なし</span>
-            </div>
-
-            <div id="recordCalendar" class="record-calendar">
-                <p class="empty">カレンダーを読み込み中です</p>
-            </div>
-
-            <p class="hint">
-                ※ 予定睡眠だけでは「記録あり」と判定しません。実睡眠・体調・勉強・勤務・メモなどの入力状況で判定します。
-            </p>
-        </section>
-
-        <section class="card summary-card">
-            <h2>📊 直近7日サマリー</h2>
-
-            <div class="summary-grid">
-                <div class="summary-box">
-                    <span class="summary-label">平均実睡眠</span>
-                    <span id="weeklyAvgSleep" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">平均睡眠効率</span>
-                    <span id="weeklyAvgEfficiency" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">合計勉強時間</span>
-                    <span id="weeklyStudyTotal" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">平均集中力</span>
-                    <span id="weeklyAvgFocus" class="summary-value">未計算</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="card achievement-card">
-            <h2>🎯 直近7日の予定達成分析</h2>
-
-            <div class="summary-grid">
-                <div class="summary-box">
-                    <span class="summary-label">平均就寝ズレ</span>
-                    <span id="weeklyAvgBedtimeGap" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">平均起床ズレ</span>
-                    <span id="weeklyAvgWakeTimeGap" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">平均在床差</span>
-                    <span id="weeklyAvgTimeInBedGap" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">予定達成率</span>
-                    <span id="weeklyAchievementRate" class="summary-value">未計算</span>
-                </div>
-            </div>
-
-            <p class="hint">
-                ※ 予定達成率は、就寝ズレ・起床ズレがそれぞれ30分以内の日を「達成」として計算します。
+            <p id="adviceStatus" class="hint">
+                ※ 外部AIは使わず、入力値にもとづくルール式のアドバイスです。
             </p>
         </section>
 
         <section class="card">
             <h2>🌙 睡眠</h2>
 
-            <h3 class="subheading">予定</h3>
+            <h3 class="subheading">今日の予定</h3>
 
             <label for="plannedBedtime">今日の予定就寝時刻</label>
             <input type="time" id="plannedBedtime">
@@ -284,6 +206,114 @@
             <p id="saveStatus">まだ保存していません</p>
         </section>
 
+        <section class="card settings-card">
+            <h2>⚙ 基本睡眠予定</h2>
+
+            <p class="hint">
+                毎日の予定就寝・予定起床の初期値になります。夜勤用なら 12:00〜19:00 のように設定できます。
+            </p>
+
+            <label for="defaultPlannedBedtime">基本予定就寝時刻</label>
+            <input type="time" id="defaultPlannedBedtime">
+
+            <label for="defaultPlannedWakeTime">基本予定起床時刻</label>
+            <input type="time" id="defaultPlannedWakeTime">
+
+            <button id="saveSettingsButton" class="primary-button">
+                基本睡眠予定を保存
+            </button>
+
+            <p id="settingsStatus" class="small-status">未設定</p>
+        </section>
+
+        <section class="card calendar-card">
+            <h2>🗓 直近30日の記録状況</h2>
+
+            <div class="calendar-legend">
+                <span><span class="legend-dot full"></span>十分記録あり</span>
+                <span><span class="legend-dot partial"></span>一部記録あり</span>
+                <span><span class="legend-dot empty-day"></span>記録なし</span>
+            </div>
+
+            <div id="recordCalendar" class="record-calendar">
+                <p class="empty">カレンダーを読み込み中です</p>
+            </div>
+
+            <p class="hint">
+                ※ 予定睡眠だけでは「記録あり」と判定しません。実睡眠・体調・勉強・勤務・メモなどの入力状況で判定します。
+            </p>
+        </section>
+
+        <section class="card summary-card">
+            <h2>📊 直近7日サマリー</h2>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">平均実睡眠</span>
+                    <span id="weeklyAvgSleep" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均睡眠効率</span>
+                    <span id="weeklyAvgEfficiency" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">合計勉強時間</span>
+                    <span id="weeklyStudyTotal" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均集中力</span>
+                    <span id="weeklyAvgFocus" class="summary-value">未計算</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card achievement-card">
+            <h2>🎯 直近7日の予定達成分析</h2>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">平均就寝ズレ</span>
+                    <span id="weeklyAvgBedtimeGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均起床ズレ</span>
+                    <span id="weeklyAvgWakeTimeGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均在床差</span>
+                    <span id="weeklyAvgTimeInBedGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">予定達成率</span>
+                    <span id="weeklyAchievementRate" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <p class="hint">
+                ※ 予定達成率は、就寝ズレ・起床ズレがそれぞれ30分以内の日を「達成」として計算します。
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>📖 記録履歴</h2>
+
+            <div class="history-controls">
+                <button class="filter-button active" data-filter="7">直近7日</button>
+                <button class="filter-button" data-filter="30">直近30日</button>
+                <button class="filter-button" data-filter="all">すべて</button>
+            </div>
+
+            <div id="historyList" class="history-list">
+                <p class="empty">まだ記録がありません</p>
+            </div>
+        </section>
+
         <section class="card backup-card">
             <h2>🧰 バックアップ・復元</h2>
 
@@ -311,24 +341,10 @@
             </button>
         </section>
 
-        <section class="card">
-            <h2>📖 記録履歴</h2>
-
-            <div class="history-controls">
-                <button class="filter-button active" data-filter="7">直近7日</button>
-                <button class="filter-button" data-filter="30">直近30日</button>
-                <button class="filter-button" data-filter="all">すべて</button>
-            </div>
-
-            <div id="historyList" class="history-list">
-                <p class="empty">まだ記録がありません</p>
-            </div>
-        </section>
-
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v2.11</p>
+        <p>CPA Life Analyzer v3.0</p>
     </footer>
 
     <script src="script.js"></script>

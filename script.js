@@ -1,6 +1,6 @@
-// CPA Life Analyzer v2.11
+// CPA Life Analyzer v3.0
 
-console.log("CPA Life Analyzer v2.11 起動");
+console.log("CPA Life Analyzer v3.0 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
@@ -821,12 +821,6 @@ function updateWarnings() {
     });
 }
 
-// 計算表示をまとめて更新
-function updateAllCalculatedDisplays() {
-    updateSleepSummary();
-    updateWarnings();
-}
-
 // 数値として使えるか確認
 function getNumberOrNull(valueText) {
     if (valueText === "" || valueText === undefined || valueText === null) {
@@ -840,6 +834,257 @@ function getNumberOrNull(valueText) {
     }
 
     return value;
+}
+
+// 今日のアドバイスを更新
+function updateTodayAdvice() {
+    const main = document.getElementById("todayAdviceMain");
+    const list = document.getElementById("todayAdviceList");
+
+    if (!main || !list) {
+        return;
+    }
+
+    const record = getFormData();
+
+    const sleepHours = getNumberOrNull(record.sleepHours);
+    const mood = getNumberOrNull(record.mood);
+    const sleepiness = getNumberOrNull(record.sleepiness);
+    const fatigue = getNumberOrNull(record.fatigue);
+    const focus = getNumberOrNull(record.focus);
+    const studyTotal = getNumberOrNull(record.studyTotal);
+
+    const efficiency = calculateSleepEfficiencyFromRecord(record);
+    const achievement = calculateAchievementFromRecord(record);
+
+    const adviceItems = [];
+    let mainText = "今日の状態を入力すると、行動の優先順位を表示します。";
+
+    const hasAnyInput =
+        record.bedtime ||
+        record.wakeTime ||
+        record.sleepHours ||
+        record.mood ||
+        record.sleepiness ||
+        record.fatigue ||
+        record.focus ||
+        record.studyTotal ||
+        record.mainSubject ||
+        record.workType ||
+        record.memo;
+
+    if (!hasAnyInput) {
+        main.textContent = "まずは今日の実績を軽く入力してください。";
+        list.innerHTML = "";
+        addAdviceItem(list, "睡眠実績、体調、勉強時間のうち1つだけでも入力すれば、助言が具体化されます。", "priority-middle");
+        return;
+    }
+
+    // 睡眠時間による判断
+    if (sleepHours !== null) {
+        if (sleepHours < 5) {
+            mainText = "今日は回復優先です。重い勉強や判断量の多い作業は抑えた方が安全です。";
+            adviceItems.push({
+                text: "実睡眠が5時間未満です。暗記や軽い復習を中心にして、長時間の新規学習は避ける判断が妥当です。",
+                className: "priority-high"
+            });
+        } else if (sleepHours < 6) {
+            mainText = "睡眠がやや不足しています。勉強量よりも継続を優先してください。";
+            adviceItems.push({
+                text: "実睡眠が6時間未満です。最低限の学習、新聞15分、短い復習のような軽いタスクが向いています。",
+                className: "priority-middle"
+            });
+        } else if (sleepHours >= 7) {
+            adviceItems.push({
+                text: "実睡眠は十分寄りです。集中力が悪くなければ、重めの科目や理解系の学習を入れやすい日です。",
+                className: "priority-good"
+            });
+        }
+    } else {
+        adviceItems.push({
+            text: "実睡眠時間が未入力です。今日の判断精度を上げるには、まず睡眠時間を入れてください。",
+            className: "priority-middle"
+        });
+    }
+
+    // 睡眠効率による判断
+    if (efficiency !== null) {
+        if (efficiency > 100) {
+            adviceItems.push({
+                text: "睡眠効率が100%を超えています。実睡眠時間か就寝・起床時刻の入力を確認してください。",
+                className: "priority-high"
+            });
+        } else if (efficiency < 70) {
+            adviceItems.push({
+                text: "睡眠効率が低めです。横になっていた時間のわりに眠れていない可能性があります。今日は負荷を下げる候補です。",
+                className: "priority-middle"
+            });
+        } else if (efficiency >= 85) {
+            adviceItems.push({
+                text: "睡眠効率は良好です。睡眠の質は比較的保てている可能性があります。",
+                className: "priority-good"
+            });
+        }
+    }
+
+    // 予定ズレによる判断
+    if (achievement && achievement.canJudgeAchievement) {
+        if (achievement.achieved) {
+            adviceItems.push({
+                text: "就寝・起床は予定から30分以内です。生活リズムは予定通りに近いです。",
+                className: "priority-good"
+            });
+        } else {
+            if (achievement.bedtimeGap !== null && Math.abs(achievement.bedtimeGap) > 60) {
+                adviceItems.push({
+                    text: `就寝が予定から大きくズレています（${formatGapMinutes(achievement.bedtimeGap)}）。次回は寝る前の行動を短くする対策が必要です。`,
+                    className: "priority-middle"
+                });
+            }
+
+            if (achievement.wakeTimeGap !== null && Math.abs(achievement.wakeTimeGap) > 60) {
+                adviceItems.push({
+                    text: `起床が予定から大きくズレています（${formatGapMinutes(achievement.wakeTimeGap)}）。予定の睡眠枠自体が現実的か確認してください。`,
+                    className: "priority-middle"
+                });
+            }
+        }
+    }
+
+    // 体調による判断
+    if (fatigue !== null && fatigue >= 8) {
+        mainText = "疲労が強い日です。今日は成果最大化より、崩れない運用を優先してください。";
+        adviceItems.push({
+            text: "疲労が8以上です。長時間学習より、短時間で終わるタスクを複数に分ける方が現実的です。",
+            className: "priority-high"
+        });
+    }
+
+    if (sleepiness !== null && sleepiness >= 8) {
+        adviceItems.push({
+            text: "眠気が強いです。机に向かう前に、短い仮眠・食事・入浴・環境調整のいずれかを検討してください。",
+            className: "priority-high"
+        });
+    }
+
+    if (focus !== null) {
+        if (focus <= 3) {
+            adviceItems.push({
+                text: "集中力が低めです。新しい論点より、既習論点の確認・音読・短答肢のチェックが向いています。",
+                className: "priority-middle"
+            });
+        } else if (focus >= 8) {
+            adviceItems.push({
+                text: "集中力が高めです。企業法・監査論など、後回しにしやすい科目を少し進める好機です。",
+                className: "priority-good"
+            });
+        }
+    }
+
+    if (mood !== null && mood <= 3) {
+        adviceItems.push({
+            text: "気分が低めです。完璧な勉強計画より、15分だけ着手して記録を残す方が効果的です。",
+            className: "priority-middle"
+        });
+    }
+
+    // 勉強時間による判断
+    if (studyTotal !== null) {
+        if (studyTotal === 0) {
+            adviceItems.push({
+                text: "勉強時間が0分です。今日は5〜15分だけでも記録を作ると、継続が途切れにくくなります。",
+                className: "priority-middle"
+            });
+        } else if (studyTotal < 30) {
+            adviceItems.push({
+                text: "勉強は着手済みです。余力があれば、あと15分だけ追加すると記録として残りやすいです。",
+                className: "priority-middle"
+            });
+        } else if (studyTotal >= 180) {
+            adviceItems.push({
+                text: "勉強時間は十分です。追加で詰め込むより、睡眠予定を崩さないことを優先してください。",
+                className: "priority-good"
+            });
+        }
+    }
+
+    // 勤務による判断
+    if (record.workType) {
+        if (record.workType === "21-8" || record.workType === "21-9" || record.workType === "21-6") {
+            adviceItems.push({
+                text: "夜勤系の勤務です。勤務前後に重い勉強を置きすぎず、睡眠の確保を最優先にしてください。",
+                className: "priority-middle"
+            });
+        } else if (record.workType === "休み") {
+            adviceItems.push({
+                text: "休みの日です。睡眠が崩れていなければ、まとまった学習か生活整備を入れやすい日です。",
+                className: "priority-good"
+            });
+        } else if (record.workType === "応援勤務") {
+            adviceItems.push({
+                text: "応援勤務の日です。移動や緊張で消耗しやすいので、勉強目標は控えめに設定する方が安全です。",
+                className: "priority-middle"
+            });
+        }
+    }
+
+    // 主科目による補足
+    if (record.mainSubject) {
+        adviceItems.push({
+            text: `主科目は「${record.mainSubject}」です。明日以降の分析で、睡眠や集中力との相性を見ていきます。`,
+            className: "priority-good"
+        });
+    }
+
+    // 全体判定
+    if (
+        sleepHours !== null &&
+        sleepHours >= 6.5 &&
+        fatigue !== null &&
+        fatigue <= 5 &&
+        sleepiness !== null &&
+        sleepiness <= 5 &&
+        focus !== null &&
+        focus >= 6
+    ) {
+        mainText = "今日は比較的動ける状態です。重めの学習を入れてもよい日です。";
+    }
+
+    if (adviceItems.length === 0) {
+        adviceItems.push({
+            text: "入力はありますが、判断材料がまだ少なめです。睡眠時間・疲労・集中力を入れると助言が具体化します。",
+            className: "priority-middle"
+        });
+    }
+
+    // 最大5件に絞る
+    const limitedItems = adviceItems.slice(0, 5);
+
+    main.textContent = mainText;
+    list.innerHTML = "";
+
+    limitedItems.forEach(item => {
+        addAdviceItem(list, item.text, item.className);
+    });
+}
+
+// アドバイス項目を追加
+function addAdviceItem(list, text, className) {
+    const item = document.createElement("li");
+    item.textContent = text;
+
+    if (className) {
+        item.classList.add(className);
+    }
+
+    list.appendChild(item);
+}
+
+// 計算表示をまとめて更新
+function updateAllCalculatedDisplays() {
+    updateSleepSummary();
+    updateWarnings();
+    updateTodayAdvice();
 }
 
 // 直近7日サマリーを更新
@@ -1421,7 +1666,7 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "2.11",
+        version: "3.0",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records
@@ -1647,6 +1892,7 @@ window.addEventListener("load", () => {
     setupSettingsEvents();
 
     updateRatingDisplays();
+    updateTodayAdvice();
     renderRecordCalendar();
     updateDeleteButton();
     updateWeeklySummary();
