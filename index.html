@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Growth Analyzer v6.5</title>
+    <title>Life Growth Analyzer v6.8</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -15,7 +15,21 @@
         <p>睡眠・体調・行動・習慣を記録し、自分の成長パターンを探す</p>
     </header>
 
+    <nav class="quick-nav" aria-label="クイック移動">
+        <a href="#dailyArea">今日の入力</a>
+        <a href="#weeklyArea">週間レビュー</a>
+        <a href="#analysisArea">分析</a>
+        <a href="#settingsArea">設定</a>
+        <a href="#aiArea">AI相談</a>
+        <a href="#backupArea">バックアップ</a>
+    </nav>
+
     <main class="app-container">
+
+        <section id="dailyArea" class="section-label-card">
+            <h2>今日の入力</h2>
+            <p>毎日使う項目です。まずここだけ入力すれば、最低限の記録になります。</p>
+        </section>
 
         <section class="card">
             <h2>📅 記録日</h2>
@@ -86,410 +100,6 @@
             <p class="hint">
                 ※ 実行型は「やったら達成」、回避型は「途切れなかったら達成」として扱います。
             </p>
-        </section>
-
-        <section class="card detection-card">
-            <h2>🧪 自動検知</h2>
-
-            <p class="hint">
-                直近の記録から、生活・睡眠・行動・習慣で注意すべき点を自動判定します。
-            </p>
-
-            <div class="detection-conclusion-box">
-                <span class="summary-label">今日の結論</span>
-                <p id="autoAlertConclusion" class="detection-conclusion">
-                    記録が増えると、今日の優先方針を表示します。
-                </p>
-            </div>
-
-            <div class="detection-summary">
-                <div class="summary-box">
-                    <span class="summary-label">警戒</span>
-                    <span id="alertHighCount" class="summary-value">0件</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">注意</span>
-                    <span id="alertMediumCount" class="summary-value">0件</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">良好</span>
-                    <span id="alertGoodCount" class="summary-value">0件</span>
-                </div>
-            </div>
-
-            <div id="autoAlertList" class="auto-alert-list">
-                <p class="empty">記録が増えると、自動検知結果を表示します。</p>
-            </div>
-
-            <p class="hint">
-                ※ 医学的診断ではありません。生活記録にもとづく確認候補です。
-            </p>
-        </section>
-
-        <section class="card weekly-review-card">
-            <h2>🧾 週間レビュー</h2>
-
-            <p class="hint">
-                直近7日をもとに、今週の良かった点・崩れた点・来週の最低ラインを自動で整理します。
-            </p>
-
-            <div class="weekly-review-conclusion-box">
-                <span class="summary-label">今週の結論</span>
-                <p id="weeklyReviewConclusion" class="weekly-review-conclusion">
-                    記録が増えると、週間レビューを表示します。
-                </p>
-            </div>
-
-            <div class="weekly-review-grid">
-                <div class="weekly-review-box">
-                    <h3>良かった点</h3>
-                    <ul id="weeklyReviewGoodList">
-                        <li>未計算</li>
-                    </ul>
-                </div>
-
-                <div class="weekly-review-box">
-                    <h3>崩れた点</h3>
-                    <ul id="weeklyReviewProblemList">
-                        <li>未計算</li>
-                    </ul>
-                </div>
-
-                <div class="weekly-review-box">
-                    <h3>来週の方針</h3>
-                    <ul id="weeklyReviewNextActionList">
-                        <li>未計算</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="weekly-review-metrics">
-                <div class="summary-box">
-                    <span class="summary-label">記録日数</span>
-                    <span id="weeklyReviewRecordDays" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">習慣達成率</span>
-                    <span id="weeklyReviewHabitRate" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">取り組み日数</span>
-                    <span id="weeklyReviewStudyDays" class="summary-value">未計算</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="card correlation-card">
-            <h2>🔍 相関分析</h2>
-
-            <p class="hint">
-                項目同士の関係を計算します。相関は原因を示すものではなく、「関係がありそうな確認候補」です。
-            </p>
-
-            <label for="correlationRange">分析期間</label>
-            <select id="correlationRange">
-                <option value="30" selected>直近30日</option>
-                <option value="all">すべて</option>
-            </select>
-
-            <div class="correlation-summary">
-                <div class="summary-box">
-                    <span class="summary-label">有効な相関</span>
-                    <span id="correlationValidCount" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">最強の相関</span>
-                    <span id="correlationTopStrength" class="summary-value">未計算</span>
-                </div>
-            </div>
-
-            <div class="correlation-insight-box">
-                <span class="summary-label">読み取り</span>
-                <p id="correlationInsight" class="correlation-insight">
-                    記録が増えると、相関から見える確認候補を表示します。
-                </p>
-            </div>
-
-            <div class="correlation-ranking-grid">
-                <div class="ranking-box">
-                    <h3>取り組み時間に関係しそうな要因</h3>
-                    <div id="studyFactorRanking" class="factor-ranking">
-                        <p class="empty">未計算</p>
-                    </div>
-                </div>
-
-                <div class="ranking-box">
-                    <h3>集中力に関係しそうな要因</h3>
-                    <div id="focusFactorRanking" class="factor-ranking">
-                        <p class="empty">未計算</p>
-                    </div>
-                </div>
-
-                <div class="ranking-box">
-                    <h3>悪化要因候補</h3>
-                    <div id="riskFactorRanking" class="factor-ranking">
-                        <p class="empty">未計算</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="correlationList" class="correlation-list">
-                <p class="empty">記録が増えると、相関分析を表示します。</p>
-            </div>
-
-            <p class="hint">
-                ※ 有効データが7件未満の場合は判定しません。14件未満は参考値、30件以上で比較的安定した傾向として扱います。
-            </p>
-        </section>
-
-        <section class="card item-settings-card">
-            <h2>🧩 取り組み項目設定</h2>
-
-            <p class="hint">
-                時間を記録する項目です。親項目の下に、教材名・内容名などの子項目を追加できます。
-            </p>
-
-            <label for="newSubjectName">追加する親項目名</label>
-            <input type="text" id="newSubjectName" placeholder="例：財務会計論、英語、読書、筋トレ">
-
-            <button id="addSubjectButton" class="primary-button">
-                親項目を追加
-            </button>
-
-            <div id="subjectSettingsList" class="subject-settings-list">
-                <p class="empty">項目を読み込み中です</p>
-            </div>
-
-            <p class="hint">
-                ※ 親項目・子項目を削除しても、過去の記録データ自体は削除されません。
-            </p>
-        </section>
-
-        <section class="card habit-settings-card">
-            <h2>🔁 継続項目設定</h2>
-
-            <p class="hint">
-                新聞・掃除・禁欲など、時間ではなく「できたか」「続いたか」で記録する項目です。
-            </p>
-
-            <label for="newHabitName">追加する継続項目名</label>
-            <input type="text" id="newHabitName" placeholder="例：新聞、掃除、禁欲、瞑想、弁当作り">
-
-            <label for="newHabitType">継続項目のタイプ</label>
-            <select id="newHabitType">
-                <option value="action">実行型：やったら達成</option>
-                <option value="avoid">回避型：途切れなければ達成</option>
-            </select>
-
-            <button id="addHabitButton" class="primary-button">
-                継続項目を追加
-            </button>
-
-            <div id="habitSettingsList" class="habit-settings-list">
-                <p class="empty">継続項目を読み込み中です</p>
-            </div>
-        </section>
-
-        <section class="card habit-analysis-card">
-            <h2>📈 継続分析</h2>
-
-            <p class="hint">
-                継続日数、直近7日・30日の達成率、体調や睡眠との関係を確認します。
-            </p>
-
-            <div id="habitAnalysisList" class="habit-analysis-list">
-                <p class="empty">継続項目を記録すると、分析が表示されます。</p>
-            </div>
-
-            <div class="item-warning-box">
-                <span class="summary-label">習慣コメント</span>
-                <p id="habitAnalysisComment" class="item-warning-text">
-                    記録が増えると、習慣と生活状態の関係を表示します。
-                </p>
-            </div>
-        </section>
-
-        <section class="card item-analysis-card">
-            <h2>📚 項目別分析</h2>
-
-            <p class="hint">
-                直近7日・30日の取り組み項目別の時間と偏りを確認します。
-            </p>
-
-            <div class="summary-grid">
-                <div class="summary-box">
-                    <span class="summary-label">直近7日 上位親項目</span>
-                    <span id="topSubject7" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">直近30日 上位親項目</span>
-                    <span id="topSubject30" class="summary-value">未計算</span>
-                </div>
-            </div>
-
-            <div class="ranking-box">
-                <h3>直近7日の親項目別時間</h3>
-                <div id="subjectAnalysis7" class="subject-analysis-list">
-                    <p class="empty">未計算</p>
-                </div>
-            </div>
-
-            <div class="ranking-box">
-                <h3>直近30日の親項目別時間</h3>
-                <div id="subjectAnalysis30" class="subject-analysis-list">
-                    <p class="empty">未計算</p>
-                </div>
-            </div>
-
-            <div class="item-warning-box">
-                <span class="summary-label">項目別コメント</span>
-                <p id="subjectAnalysisComment" class="item-warning-text">
-                    記録が増えると、取り組みの偏りを表示します。
-                </p>
-            </div>
-        </section>
-
-        <section class="card subitem-analysis-card">
-            <h2>📘 子項目・教材別分析</h2>
-
-            <p class="hint">
-                親項目の下に設定した教材名・内容名ごとの取り組み時間を確認します。
-            </p>
-
-            <div class="summary-grid">
-                <div class="summary-box">
-                    <span class="summary-label">直近7日 上位子項目</span>
-                    <span id="topSubSubject7" class="summary-value">未計算</span>
-                </div>
-
-                <div class="summary-box">
-                    <span class="summary-label">直近30日 上位子項目</span>
-                    <span id="topSubSubject30" class="summary-value">未計算</span>
-                </div>
-            </div>
-
-            <div class="ranking-box">
-                <h3>直近7日の子項目別時間</h3>
-                <div id="subSubjectAnalysis7" class="subject-analysis-list">
-                    <p class="empty">未計算</p>
-                </div>
-            </div>
-
-            <div class="ranking-box">
-                <h3>直近30日の子項目別時間</h3>
-                <div id="subSubjectAnalysis30" class="subject-analysis-list">
-                    <p class="empty">未計算</p>
-                </div>
-            </div>
-
-            <div class="item-warning-box">
-                <span class="summary-label">子項目コメント</span>
-                <p id="subSubjectAnalysisComment" class="item-warning-text">
-                    記録が増えると、教材・内容ごとの偏りを表示します。
-                </p>
-            </div>
-        </section>
-
-        <section class="card goal-card">
-            <h2>🎯 目標設定</h2>
-
-            <p class="hint">
-                現在の目標を設定すると、AI相談用テキストや自動コメントに反映されます。
-            </p>
-
-            <label for="goalTitle">現在の目標</label>
-            <input type="text" id="goalTitle" placeholder="例：公認会計士試験合格、TOEIC900、体力改善、読書習慣化">
-
-            <label for="goalReason">目標の理由</label>
-            <textarea id="goalReason" rows="3" placeholder="例：生活を立て直し、将来の選択肢を増やしたい"></textarea>
-
-            <label for="goalPriorityItem">最優先で伸ばしたい項目</label>
-            <select id="goalPriorityItem">
-                <option value="">未選択</option>
-            </select>
-
-            <label for="goalMinimumMinutes">1日の最低ライン（分）</label>
-            <input type="number" id="goalMinimumMinutes" min="0" placeholder="例：15">
-
-            <label for="goalStandardMinutes">1日の標準ライン（分）</label>
-            <input type="number" id="goalStandardMinutes" min="0" placeholder="例：120">
-
-            <button id="saveGoalButton" class="primary-button">
-                目標設定を保存
-            </button>
-
-            <p id="goalStatus" class="small-status">未設定</p>
-        </section>
-
-        <section class="card ai-text-card">
-            <h2>🤖 AI相談用テキスト</h2>
-
-            <p class="hint">
-                相談目的を選ぶと、ChatGPTに貼り付ける文章の内容を切り替えます。
-            </p>
-
-            <div class="consult-type-box">
-                <p class="consult-type-title">相談タイプ</p>
-
-                <label class="consult-type-option">
-                    <input type="radio" name="consultType" value="today" checked>
-                    <span>
-                        <strong>今日の行動相談</strong>
-                        <small>今日の取り組み量・習慣・勤務前後の動き方を相談する</small>
-                    </span>
-                </label>
-
-                <label class="consult-type-option">
-                    <input type="radio" name="consultType" value="thirty">
-                    <span>
-                        <strong>直近30日の生活改善相談</strong>
-                        <small>睡眠・疲労・取り組み継続・習慣の傾向を相談する</small>
-                    </span>
-                </label>
-
-                <label class="consult-type-option">
-                    <input type="radio" name="consultType" value="long">
-                    <span>
-                        <strong>長期傾向分析</strong>
-                        <small>月別要約から半年〜1年単位の改善点を相談する</small>
-                    </span>
-                </label>
-
-                <label class="consult-type-option">
-                    <input type="radio" name="consultType" value="goal">
-                    <span>
-                        <strong>目標達成・学習計画相談</strong>
-                        <small>設定した目標に向けた現実的な計画を相談する</small>
-                    </span>
-                </label>
-
-                <label class="consult-type-option">
-                    <input type="radio" name="consultType" value="weekly">
-                    <span>
-                        <strong>週間レビュー相談</strong>
-                        <small>今週の良かった点・崩れた点・来週の方針を相談する</small>
-                    </span>
-                </label>
-            </div>
-
-            <button id="generateAiTextButton" class="primary-button">
-                AI相談用テキストを作成
-            </button>
-
-            <label for="aiConsultText">生成された相談文</label>
-            <textarea id="aiConsultText" rows="14" readonly placeholder="ここにAI相談用テキストが表示されます"></textarea>
-
-            <button id="copyAiTextButton" class="secondary-button">
-                テキストをコピー
-            </button>
-
-            <p id="copyStatus" class="small-status">未作成</p>
         </section>
 
         <section class="card">
@@ -660,24 +270,281 @@
             <p id="saveStatus">まだ保存していません</p>
         </section>
 
-        <section class="card settings-card">
-            <h2>⚙ 基本睡眠予定</h2>
+        <section id="weeklyArea" class="section-label-card">
+            <h2>週間レビュー</h2>
+            <p>直近7日を確認し、来週の最低ラインを決めるためのエリアです。</p>
+        </section>
+
+        <section class="card weekly-review-card">
+            <h2>🧾 週間レビュー</h2>
 
             <p class="hint">
-                毎日の予定就寝・予定起床の初期値になります。夜勤用なら 12:00〜19:00 のように設定できます。
+                直近7日をもとに、今週の良かった点・崩れた点・来週の最低ラインを自動で整理します。
             </p>
 
-            <label for="defaultPlannedBedtime">基本予定就寝時刻</label>
-            <input type="time" id="defaultPlannedBedtime">
+            <div class="weekly-review-conclusion-box">
+                <span class="summary-label">今週の結論</span>
+                <p id="weeklyReviewConclusion" class="weekly-review-conclusion">
+                    記録が増えると、週間レビューを表示します。
+                </p>
+            </div>
 
-            <label for="defaultPlannedWakeTime">基本予定起床時刻</label>
-            <input type="time" id="defaultPlannedWakeTime">
+            <div class="weekly-compare-box">
+                <span class="summary-label">先週比較</span>
+                <p id="weeklyReviewCompare" class="weekly-compare-text">
+                    記録が増えると、今週と先週を比較します。
+                </p>
+            </div>
 
-            <button id="saveSettingsButton" class="primary-button">
-                基本睡眠予定を保存
-            </button>
+            <div class="weekly-review-grid">
+                <div class="weekly-review-box">
+                    <h3>良かった点</h3>
+                    <ul id="weeklyReviewGoodList">
+                        <li>未計算</li>
+                    </ul>
+                </div>
 
-            <p id="settingsStatus" class="small-status">未設定</p>
+                <div class="weekly-review-box">
+                    <h3>崩れた点</h3>
+                    <ul id="weeklyReviewProblemList">
+                        <li>未計算</li>
+                    </ul>
+                </div>
+
+                <div class="weekly-review-box">
+                    <h3>来週の方針</h3>
+                    <ul id="weeklyReviewNextActionList">
+                        <li>未計算</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="weekly-review-metrics">
+                <div class="summary-box">
+                    <span class="summary-label">記録日数</span>
+                    <span id="weeklyReviewRecordDays" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">習慣達成率</span>
+                    <span id="weeklyReviewHabitRate" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">取り組み日数</span>
+                    <span id="weeklyReviewStudyDays" class="summary-value">未計算</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="analysisArea" class="section-label-card">
+            <h2>分析</h2>
+            <p>入力した記録をもとに、傾向・偏り・相関を確認します。</p>
+        </section>
+
+        <section class="card detection-card">
+            <h2>🧪 自動検知</h2>
+
+            <p class="hint">
+                直近の記録から、生活・睡眠・行動・習慣で注意すべき点を自動判定します。
+            </p>
+
+            <div class="detection-conclusion-box">
+                <span class="summary-label">今日の結論</span>
+                <p id="autoAlertConclusion" class="detection-conclusion">
+                    記録が増えると、今日の優先方針を表示します。
+                </p>
+            </div>
+
+            <div class="detection-summary">
+                <div class="summary-box">
+                    <span class="summary-label">警戒</span>
+                    <span id="alertHighCount" class="summary-value">0件</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">注意</span>
+                    <span id="alertMediumCount" class="summary-value">0件</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">良好</span>
+                    <span id="alertGoodCount" class="summary-value">0件</span>
+                </div>
+            </div>
+
+            <div id="autoAlertList" class="auto-alert-list">
+                <p class="empty">記録が増えると、自動検知結果を表示します。</p>
+            </div>
+
+            <p class="hint">
+                ※ 医学的診断ではありません。生活記録にもとづく確認候補です。
+            </p>
+        </section>
+
+        <section class="card correlation-card">
+            <h2>🔍 相関分析</h2>
+
+            <p class="hint">
+                項目同士の関係を計算します。相関は原因を示すものではなく、「関係がありそうな確認候補」です。
+            </p>
+
+            <label for="correlationRange">分析期間</label>
+            <select id="correlationRange">
+                <option value="30" selected>直近30日</option>
+                <option value="all">すべて</option>
+            </select>
+
+            <div class="correlation-summary">
+                <div class="summary-box">
+                    <span class="summary-label">有効な相関</span>
+                    <span id="correlationValidCount" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">最強の相関</span>
+                    <span id="correlationTopStrength" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div class="correlation-insight-box">
+                <span class="summary-label">読み取り</span>
+                <p id="correlationInsight" class="correlation-insight">
+                    記録が増えると、相関から見える確認候補を表示します。
+                </p>
+            </div>
+
+            <div class="correlation-ranking-grid">
+                <div class="ranking-box">
+                    <h3>取り組み時間に関係しそうな要因</h3>
+                    <div id="studyFactorRanking" class="factor-ranking">
+                        <p class="empty">未計算</p>
+                    </div>
+                </div>
+
+                <div class="ranking-box">
+                    <h3>集中力に関係しそうな要因</h3>
+                    <div id="focusFactorRanking" class="factor-ranking">
+                        <p class="empty">未計算</p>
+                    </div>
+                </div>
+
+                <div class="ranking-box">
+                    <h3>悪化要因候補</h3>
+                    <div id="riskFactorRanking" class="factor-ranking">
+                        <p class="empty">未計算</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="correlationList" class="correlation-list">
+                <p class="empty">記録が増えると、相関分析を表示します。</p>
+            </div>
+
+            <p class="hint">
+                ※ 有効データが7件未満の場合は判定しません。14件未満は参考値、30件以上で比較的安定した傾向として扱います。
+            </p>
+        </section>
+
+        <section class="card habit-analysis-card">
+            <h2>📈 継続分析</h2>
+
+            <p class="hint">
+                継続日数、直近7日・30日の達成率、体調や睡眠との関係を確認します。
+            </p>
+
+            <div id="habitAnalysisList" class="habit-analysis-list">
+                <p class="empty">継続項目を記録すると、分析が表示されます。</p>
+            </div>
+
+            <div class="item-warning-box">
+                <span class="summary-label">習慣コメント</span>
+                <p id="habitAnalysisComment" class="item-warning-text">
+                    記録が増えると、習慣と生活状態の関係を表示します。
+                </p>
+            </div>
+        </section>
+
+        <section class="card item-analysis-card">
+            <h2>📚 項目別分析</h2>
+
+            <p class="hint">
+                直近7日・30日の取り組み項目別の時間と偏りを確認します。
+            </p>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">直近7日 上位親項目</span>
+                    <span id="topSubject7" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">直近30日 上位親項目</span>
+                    <span id="topSubject30" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近7日の親項目別時間</h3>
+                <div id="subjectAnalysis7" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近30日の親項目別時間</h3>
+                <div id="subjectAnalysis30" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="item-warning-box">
+                <span class="summary-label">項目別コメント</span>
+                <p id="subjectAnalysisComment" class="item-warning-text">
+                    記録が増えると、取り組みの偏りを表示します。
+                </p>
+            </div>
+        </section>
+
+        <section class="card subitem-analysis-card">
+            <h2>📘 子項目・教材別分析</h2>
+
+            <p class="hint">
+                親項目の下に設定した教材名・内容名ごとの取り組み時間を確認します。
+            </p>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">直近7日 上位子項目</span>
+                    <span id="topSubSubject7" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">直近30日 上位子項目</span>
+                    <span id="topSubSubject30" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近7日の子項目別時間</h3>
+                <div id="subSubjectAnalysis7" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近30日の子項目別時間</h3>
+                <div id="subSubjectAnalysis30" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="item-warning-box">
+                <span class="summary-label">子項目コメント</span>
+                <p id="subSubjectAnalysisComment" class="item-warning-text">
+                    記録が増えると、教材・内容ごとの偏りを表示します。
+                </p>
+            </div>
         </section>
 
         <section class="card calendar-card">
@@ -831,6 +698,185 @@
             </div>
         </section>
 
+        <section id="settingsArea" class="section-label-card">
+            <h2>設定</h2>
+            <p>目標・基本睡眠予定・取り組み項目・継続項目を管理します。</p>
+        </section>
+
+        <section class="card goal-card">
+            <h2>🎯 目標設定</h2>
+
+            <p class="hint">
+                現在の目標を設定すると、AI相談用テキストや自動コメントに反映されます。
+            </p>
+
+            <label for="goalTitle">現在の目標</label>
+            <input type="text" id="goalTitle" placeholder="例：公認会計士試験合格、TOEIC900、体力改善、読書習慣化">
+
+            <label for="goalReason">目標の理由</label>
+            <textarea id="goalReason" rows="3" placeholder="例：生活を立て直し、将来の選択肢を増やしたい"></textarea>
+
+            <label for="goalPriorityItem">最優先で伸ばしたい項目</label>
+            <select id="goalPriorityItem">
+                <option value="">未選択</option>
+            </select>
+
+            <label for="goalMinimumMinutes">1日の最低ライン（分）</label>
+            <input type="number" id="goalMinimumMinutes" min="0" placeholder="例：15">
+
+            <label for="goalStandardMinutes">1日の標準ライン（分）</label>
+            <input type="number" id="goalStandardMinutes" min="0" placeholder="例：120">
+
+            <button id="saveGoalButton" class="primary-button">
+                目標設定を保存
+            </button>
+
+            <p id="goalStatus" class="small-status">未設定</p>
+        </section>
+
+        <section class="card settings-card">
+            <h2>⚙ 基本睡眠予定</h2>
+
+            <p class="hint">
+                毎日の予定就寝・予定起床の初期値になります。夜勤用なら 12:00〜19:00 のように設定できます。
+            </p>
+
+            <label for="defaultPlannedBedtime">基本予定就寝時刻</label>
+            <input type="time" id="defaultPlannedBedtime">
+
+            <label for="defaultPlannedWakeTime">基本予定起床時刻</label>
+            <input type="time" id="defaultPlannedWakeTime">
+
+            <button id="saveSettingsButton" class="primary-button">
+                基本睡眠予定を保存
+            </button>
+
+            <p id="settingsStatus" class="small-status">未設定</p>
+        </section>
+
+        <section class="card item-settings-card">
+            <h2>🧩 取り組み項目設定</h2>
+
+            <p class="hint">
+                時間を記録する項目です。親項目の下に、教材名・内容名などの子項目を追加できます。
+            </p>
+
+            <label for="newSubjectName">追加する親項目名</label>
+            <input type="text" id="newSubjectName" placeholder="例：財務会計論、英語、読書、筋トレ">
+
+            <button id="addSubjectButton" class="primary-button">
+                親項目を追加
+            </button>
+
+            <div id="subjectSettingsList" class="subject-settings-list">
+                <p class="empty">項目を読み込み中です</p>
+            </div>
+
+            <p class="hint">
+                ※ 親項目・子項目を削除しても、過去の記録データ自体は削除されません。
+            </p>
+        </section>
+
+        <section class="card habit-settings-card">
+            <h2>🔁 継続項目設定</h2>
+
+            <p class="hint">
+                新聞・掃除・禁欲など、時間ではなく「できたか」「続いたか」で記録する項目です。
+            </p>
+
+            <label for="newHabitName">追加する継続項目名</label>
+            <input type="text" id="newHabitName" placeholder="例：新聞、掃除、禁欲、瞑想、弁当作り">
+
+            <label for="newHabitType">継続項目のタイプ</label>
+            <select id="newHabitType">
+                <option value="action">実行型：やったら達成</option>
+                <option value="avoid">回避型：途切れなければ達成</option>
+            </select>
+
+            <button id="addHabitButton" class="primary-button">
+                継続項目を追加
+            </button>
+
+            <div id="habitSettingsList" class="habit-settings-list">
+                <p class="empty">継続項目を読み込み中です</p>
+            </div>
+        </section>
+
+        <section id="aiArea" class="section-label-card">
+            <h2>AI相談</h2>
+            <p>記録データを相談文にまとめ、ChatGPTに貼り付けられる形にします。</p>
+        </section>
+
+        <section class="card ai-text-card">
+            <h2>🤖 AI相談用テキスト</h2>
+
+            <p class="hint">
+                相談目的を選ぶと、ChatGPTに貼り付ける文章の内容を切り替えます。
+            </p>
+
+            <div class="consult-type-box">
+                <p class="consult-type-title">相談タイプ</p>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="today" checked>
+                    <span>
+                        <strong>今日の行動相談</strong>
+                        <small>今日の取り組み量・習慣・勤務前後の動き方を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="thirty">
+                    <span>
+                        <strong>直近30日の生活改善相談</strong>
+                        <small>睡眠・疲労・取り組み継続・習慣の傾向を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="long">
+                    <span>
+                        <strong>長期傾向分析</strong>
+                        <small>月別要約から半年〜1年単位の改善点を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="goal">
+                    <span>
+                        <strong>目標達成・学習計画相談</strong>
+                        <small>設定した目標に向けた現実的な計画を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="weekly">
+                    <span>
+                        <strong>週間レビュー相談</strong>
+                        <small>今週の良かった点・崩れた点・来週の方針を相談する</small>
+                    </span>
+                </label>
+            </div>
+
+            <button id="generateAiTextButton" class="primary-button">
+                AI相談用テキストを作成
+            </button>
+
+            <label for="aiConsultText">生成された相談文</label>
+            <textarea id="aiConsultText" rows="14" readonly placeholder="ここにAI相談用テキストが表示されます"></textarea>
+
+            <button id="copyAiTextButton" class="secondary-button">
+                テキストをコピー
+            </button>
+
+            <p id="copyStatus" class="small-status">未作成</p>
+        </section>
+
+        <section id="backupArea" class="section-label-card">
+            <h2>バックアップ・削除</h2>
+            <p>データ消失対策として、定期的にバックアップを保存してください。</p>
+        </section>
+
         <section class="card backup-card">
             <h2>🧰 バックアップ・復元</h2>
 
@@ -861,7 +907,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>Life Growth Analyzer v6.5</p>
+        <p>Life Growth Analyzer v6.8</p>
     </footer>
 
     <script src="script.js"></script>

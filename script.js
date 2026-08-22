@@ -1,6 +1,6 @@
-// Life Growth Analyzer v6.5
+// Life Growth Analyzer v6.8
 
-console.log("Life Growth Analyzer v6.5 起動");
+console.log("Life Growth Analyzer v6.8 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -74,6 +74,7 @@ function $(id) {
 
 function setText(id, text) {
     const element = $(id);
+
     if (element) {
         element.textContent = text;
     }
@@ -2865,15 +2866,18 @@ function updateAchievementSummary() {
 }
 
 function getWeeklyHabitRate() {
+    return getHabitRateForDates(getRecentDates(7));
+}
+
+function getHabitRateForDates(dates) {
     const habits = getHabits();
 
-    if (habits.length === 0) {
+    if (habits.length === 0 || dates.length === 0) {
         return null;
     }
 
-    const dates = getRecentDates(7);
     let achieved = 0;
-    let total = habits.length * dates.length;
+    const total = habits.length * dates.length;
 
     dates.forEach(date => {
         habits.forEach(habit => {
@@ -2884,6 +2888,68 @@ function getWeeklyHabitRate() {
     });
 
     return total === 0 ? null : achieved / total * 100;
+}
+
+function buildWeeklyCompareText() {
+    const records = getRecords();
+
+    const thisWeekDates = getRecentDates(7);
+    const lastWeekDates = getRecentDates(14).slice(0, 7);
+
+    const thisWeekStats = buildPeriodStats(records, thisWeekDates);
+    const lastWeekStats = buildPeriodStats(records, lastWeekDates);
+
+    const thisSleep = averageNumber(thisWeekStats.sleepValues);
+    const lastSleep = averageNumber(lastWeekStats.sleepValues);
+
+    const thisFocus = averageNumber(thisWeekStats.focusValues);
+    const lastFocus = averageNumber(lastWeekStats.focusValues);
+
+    const thisStudy = thisWeekStats.studyTotal;
+    const lastStudy = lastWeekStats.studyTotal;
+
+    const thisHabitRate = getWeeklyHabitRate();
+    const lastHabitRate = getHabitRateForDates(lastWeekDates);
+
+    const comments = [];
+
+    if (thisWeekStats.recordDays === 0 && lastWeekStats.recordDays === 0) {
+        return "比較できる記録がまだありません。";
+    }
+
+    if (lastWeekStats.recordDays === 0) {
+        return "先週の記録がないため、今週との比較はまだできません。";
+    }
+
+    if (thisSleep !== null && lastSleep !== null) {
+        const diff = thisSleep - lastSleep;
+        const sign = diff >= 0 ? "+" : "";
+        comments.push(`睡眠：今週${thisSleep.toFixed(1)}h / 先週${lastSleep.toFixed(1)}h（${sign}${diff.toFixed(1)}h）`);
+    }
+
+    if (thisFocus !== null && lastFocus !== null) {
+        const diff = thisFocus - lastFocus;
+        const sign = diff >= 0 ? "+" : "";
+        comments.push(`集中力：今週${thisFocus.toFixed(1)} / 先週${lastFocus.toFixed(1)}（${sign}${diff.toFixed(1)}）`);
+    }
+
+    if (thisStudy > 0 || lastStudy > 0) {
+        const diff = thisStudy - lastStudy;
+        const sign = diff >= 0 ? "+" : "";
+        comments.push(`取り組み時間：今週${thisStudy}分 / 先週${lastStudy}分（${sign}${diff}分）`);
+    }
+
+    if (thisHabitRate !== null && lastHabitRate !== null) {
+        const diff = thisHabitRate - lastHabitRate;
+        const sign = diff >= 0 ? "+" : "";
+        comments.push(`習慣達成率：今週${thisHabitRate.toFixed(0)}% / 先週${lastHabitRate.toFixed(0)}%（${sign}${diff.toFixed(0)}pt）`);
+    }
+
+    if (comments.length === 0) {
+        return "先週比較には、睡眠・集中力・取り組み時間・習慣の記録がもう少し必要です。";
+    }
+
+    return comments.join("。");
 }
 
 function buildWeeklyReviewData() {
@@ -3012,6 +3078,7 @@ function updateWeeklyReview() {
     const data = buildWeeklyReviewData();
 
     setText("weeklyReviewConclusion", data.conclusion);
+    setText("weeklyReviewCompare", buildWeeklyCompareText());
     setText("weeklyReviewRecordDays", `${data.recordDays}/7日`);
     setText("weeklyReviewHabitRate", data.habitRate === null ? "未計算" : `${data.habitRate.toFixed(0)}%`);
     setText("weeklyReviewStudyDays", `${data.studyDays}日`);
@@ -3027,6 +3094,7 @@ function buildWeeklyReviewText() {
     return [
         "【週間レビュー】",
         `今週の結論：${data.conclusion}`,
+        `先週比較：${buildWeeklyCompareText()}`,
         `記録日数：${data.recordDays}/7日`,
         `習慣達成率：${data.habitRate === null ? "未計算" : data.habitRate.toFixed(0) + "%"}`,
         `取り組み日数：${data.studyDays}日`,
@@ -4428,7 +4496,7 @@ function deleteCurrentRecord() {
 function exportData() {
     const backupData = {
         appName: "Life Growth Analyzer",
-        version: "6.5",
+        version: "6.8",
         exportedAt: new Date().toISOString(),
         settings: getSettings(),
         subjects: getSubjectConfigs(),
