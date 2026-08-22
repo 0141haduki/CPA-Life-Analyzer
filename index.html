@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v2.4</title>
+    <title>CPA Life Analyzer v2.8</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -24,13 +24,73 @@
             <input type="date" id="recordDate">
         </section>
 
+        <section class="card settings-card">
+            <h2>⚙ 基本睡眠予定</h2>
+
+            <p class="hint">
+                毎日の予定就寝・予定起床の初期値になります。夜勤用なら 12:00〜19:00 のように設定できます。
+            </p>
+
+            <label for="defaultPlannedBedtime">基本予定就寝時刻</label>
+            <input type="time" id="defaultPlannedBedtime">
+
+            <label for="defaultPlannedWakeTime">基本予定起床時刻</label>
+            <input type="time" id="defaultPlannedWakeTime">
+
+            <button id="saveSettingsButton" class="primary-button">
+                基本睡眠予定を保存
+            </button>
+
+            <p id="settingsStatus" class="small-status">未設定</p>
+        </section>
+
+        <section class="card summary-card">
+            <h2>📊 直近7日サマリー</h2>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">平均実睡眠</span>
+                    <span id="weeklyAvgSleep" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均睡眠効率</span>
+                    <span id="weeklyAvgEfficiency" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">合計勉強時間</span>
+                    <span id="weeklyStudyTotal" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均集中力</span>
+                    <span id="weeklyAvgFocus" class="summary-value">未計算</span>
+                </div>
+            </div>
+        </section>
+
         <section class="card">
             <h2>🌙 睡眠</h2>
 
-            <label for="bedtime">就寝時刻</label>
+            <h3 class="subheading">予定</h3>
+
+            <label for="plannedBedtime">今日の予定就寝時刻</label>
+            <input type="time" id="plannedBedtime">
+
+            <label for="plannedWakeTime">今日の予定起床時刻</label>
+            <input type="time" id="plannedWakeTime">
+
+            <p class="hint">
+                ※ 基本睡眠予定から自動入力されます。今日だけ違う予定にしたい場合は、ここを変更してください。
+            </p>
+
+            <h3 class="subheading">実績</h3>
+
+            <label for="bedtime">実際の就寝時刻</label>
             <input type="time" id="bedtime">
 
-            <label for="wakeTime">起床時刻</label>
+            <label for="wakeTime">実際の起床時刻</label>
             <input type="time" id="wakeTime">
 
             <label for="sleepHours">実睡眠時間（時間）</label>
@@ -41,13 +101,33 @@
 
             <div class="sleep-summary">
                 <div class="summary-box">
-                    <span class="summary-label">在床時間</span>
+                    <span class="summary-label">予定在床時間</span>
+                    <span id="plannedTimeInBed" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">実際在床時間</span>
                     <span id="timeInBed" class="summary-value">未計算</span>
                 </div>
 
                 <div class="summary-box">
                     <span class="summary-label">睡眠効率</span>
                     <span id="sleepEfficiency" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">在床差</span>
+                    <span id="timeInBedGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">就寝ズレ</span>
+                    <span id="bedtimeGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">起床ズレ</span>
+                    <span id="wakeTimeGap" class="summary-value">未計算</span>
                 </div>
             </div>
 
@@ -128,6 +208,23 @@
             <p id="saveStatus">まだ保存していません</p>
         </section>
 
+        <section class="card backup-card">
+            <h2>🧰 バックアップ・復元</h2>
+
+            <p class="hint">
+                記録はChrome内に保存されています。消失対策として、定期的にJSONバックアップを保存してください。
+            </p>
+
+            <button id="exportButton" class="primary-button">
+                データをバックアップ
+            </button>
+
+            <label for="importFile" class="file-label">
+                JSONファイルから復元
+            </label>
+            <input type="file" id="importFile" accept="application/json">
+        </section>
+
         <section class="card danger-card">
             <h2>🗑 記録の削除</h2>
             <p class="hint">
@@ -140,6 +237,13 @@
 
         <section class="card">
             <h2>📖 記録履歴</h2>
+
+            <div class="history-controls">
+                <button class="filter-button active" data-filter="7">直近7日</button>
+                <button class="filter-button" data-filter="30">直近30日</button>
+                <button class="filter-button" data-filter="all">すべて</button>
+            </div>
+
             <div id="historyList" class="history-list">
                 <p class="empty">まだ記録がありません</p>
             </div>
@@ -148,7 +252,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v2.4</p>
+        <p>CPA Life Analyzer v2.8</p>
     </footer>
 
     <script src="script.js"></script>

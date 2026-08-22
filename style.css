@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v2.4 */
+/* CPA Life Analyzer v2.8 */
 
 * {
     box-sizing: border-box;
@@ -52,6 +52,14 @@ body {
     padding-bottom: 8px;
 }
 
+.subheading {
+    margin: 18px 0 8px;
+    padding-left: 10px;
+    border-left: 4px solid #2563eb;
+    font-size: 16px;
+    color: #1f2937;
+}
+
 label {
     display: block;
     margin-top: 14px;
@@ -83,7 +91,24 @@ textarea {
     resize: vertical;
 }
 
-/* 睡眠サマリー */
+/* 基本設定 */
+.settings-card {
+    border-left: 5px solid #0891b2;
+}
+
+.small-status {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0369a1;
+}
+
+/* サマリー */
+.summary-card {
+    border-left: 5px solid #0f766e;
+}
+
+.summary-grid,
 .sleep-summary {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -110,6 +135,10 @@ textarea {
     font-size: 20px;
     font-weight: 700;
     color: #1e293b;
+}
+
+.summary-value.good {
+    color: #15803d;
 }
 
 .summary-value.warning {
@@ -170,6 +199,36 @@ textarea {
     color: #92400e;
 }
 
+/* バックアップ */
+.backup-card {
+    border-left: 5px solid #7c3aed;
+}
+
+.primary-button,
+.file-label {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+}
+
+.primary-button:hover,
+.file-label:hover {
+    background: #1d4ed8;
+}
+
+#importFile {
+    margin-top: 8px;
+}
+
 /* 削除 */
 .danger-card {
     border-left: 5px solid #dc2626;
@@ -198,6 +257,34 @@ textarea {
 }
 
 /* 履歴 */
+.history-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.filter-button {
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.filter-button:hover {
+    background: #eef2ff;
+    border-color: #2563eb;
+}
+
+.filter-button.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
 .history-list {
     display: flex;
     flex-direction: column;
@@ -224,6 +311,18 @@ textarea {
     background: #dbeafe;
     border-color: #2563eb;
     font-weight: 700;
+}
+
+.history-date {
+    display: block;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.history-detail {
+    display: block;
+    color: #475569;
+    font-size: 14px;
 }
 
 .empty {
@@ -254,7 +353,12 @@ textarea {
         font-size: 16px;
     }
 
+    .summary-grid,
     .sleep-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .history-controls {
         grid-template-columns: 1fr;
     }
 }

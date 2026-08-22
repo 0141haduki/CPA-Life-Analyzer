@@ -1,13 +1,16 @@
-// CPA Life Analyzer v2.4
+// CPA Life Analyzer v2.8
 
-console.log("CPA Life Analyzer v2.4 起動");
+console.log("CPA Life Analyzer v2.8 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
+const SETTINGS_KEY = "CPA_LIFE_ANALYZER_SETTINGS_V2";
 
 // 日付以外の入力項目
 const fieldIds = [
+    "plannedBedtime",
+    "plannedWakeTime",
     "bedtime",
     "wakeTime",
     "sleepHours",
@@ -24,6 +27,9 @@ const fieldIds = [
 
 // 現在選択中の日付
 let currentDate = "";
+
+// 履歴表示フィルター
+let historyFilter = "7";
 
 // 今日の日付を YYYY-MM-DD 形式で取得
 function getTodayString() {
@@ -42,6 +48,14 @@ function getCurrentTimeString() {
     return `${hours}:${minutes}`;
 }
 
+// 日付差を計算
+function getDaysDiff(dateText) {
+    const today = new Date(getTodayString());
+    const target = new Date(dateText);
+    const diffMs = today - target;
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
 // 全記録を取得
 function getRecords() {
     const text = localStorage.getItem(STORAGE_KEY);
@@ -51,7 +65,13 @@ function getRecords() {
     }
 
     try {
-        return JSON.parse(text);
+        const records = JSON.parse(text);
+
+        if (!records || typeof records !== "object" || Array.isArray(records)) {
+            return {};
+        }
+
+        return records;
     } catch (error) {
         console.error("データの読み込みに失敗しました", error);
         return {};
@@ -61,6 +81,119 @@ function getRecords() {
 // 全記録を保存
 function setRecords(records) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+// 設定を取得
+function getSettings() {
+    const text = localStorage.getItem(SETTINGS_KEY);
+
+    if (!text) {
+        return {
+            defaultPlannedBedtime: "",
+            defaultPlannedWakeTime: ""
+        };
+    }
+
+    try {
+        const settings = JSON.parse(text);
+
+        return {
+            defaultPlannedBedtime: settings.defaultPlannedBedtime || "",
+            defaultPlannedWakeTime: settings.defaultPlannedWakeTime || ""
+        };
+    } catch (error) {
+        console.error("設定の読み込みに失敗しました", error);
+
+        return {
+            defaultPlannedBedtime: "",
+            defaultPlannedWakeTime: ""
+        };
+    }
+}
+
+// 設定を保存
+function setSettings(settings) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+// 設定欄に反映
+function loadSettingsToForm() {
+    const settings = getSettings();
+
+    const defaultBedtime = document.getElementById("defaultPlannedBedtime");
+    const defaultWakeTime = document.getElementById("defaultPlannedWakeTime");
+
+    if (defaultBedtime) {
+        defaultBedtime.value = settings.defaultPlannedBedtime;
+    }
+
+    if (defaultWakeTime) {
+        defaultWakeTime.value = settings.defaultPlannedWakeTime;
+    }
+
+    updateSettingsStatus();
+}
+
+// 基本睡眠予定を保存
+function saveSettingsFromForm() {
+    const defaultBedtime = document.getElementById("defaultPlannedBedtime")?.value || "";
+    const defaultWakeTime = document.getElementById("defaultPlannedWakeTime")?.value || "";
+
+    const settings = {
+        defaultPlannedBedtime: defaultBedtime,
+        defaultPlannedWakeTime: defaultWakeTime
+    };
+
+    setSettings(settings);
+    updateSettingsStatus();
+
+    const plannedBedtime = document.getElementById("plannedBedtime");
+    const plannedWakeTime = document.getElementById("plannedWakeTime");
+
+    if (plannedBedtime && !plannedBedtime.value) {
+        plannedBedtime.value = defaultBedtime;
+    }
+
+    if (plannedWakeTime && !plannedWakeTime.value) {
+        plannedWakeTime.value = defaultWakeTime;
+    }
+
+    updateAllCalculatedDisplays();
+    saveCurrentRecord();
+
+    window.alert("基本睡眠予定を保存しました。新しい日付ではこの予定が自動入力されます。");
+}
+
+// 設定保存状態を表示
+function updateSettingsStatus() {
+    const status = document.getElementById("settingsStatus");
+    const settings = getSettings();
+
+    if (!status) {
+        return;
+    }
+
+    if (settings.defaultPlannedBedtime && settings.defaultPlannedWakeTime) {
+        status.textContent = `設定中：${settings.defaultPlannedBedtime} 〜 ${settings.defaultPlannedWakeTime}`;
+    } else {
+        status.textContent = "未設定";
+    }
+}
+
+// 基本予定を今日の予定欄へ反映
+function applyDefaultPlanToForm() {
+    const settings = getSettings();
+
+    const plannedBedtime = document.getElementById("plannedBedtime");
+    const plannedWakeTime = document.getElementById("plannedWakeTime");
+
+    if (plannedBedtime) {
+        plannedBedtime.value = settings.defaultPlannedBedtime;
+    }
+
+    if (plannedWakeTime) {
+        plannedWakeTime.value = settings.defaultPlannedWakeTime;
+    }
 }
 
 // 画面の入力内容を取得
@@ -80,6 +213,8 @@ function getFormData() {
 
 // 画面にデータを反映
 function setFormData(data) {
+    const settings = getSettings();
+
     fieldIds.forEach(id => {
         const element = document.getElementById(id);
 
@@ -87,6 +222,23 @@ function setFormData(data) {
             element.value = data[id] ?? "";
         }
     });
+
+    // 古い記録に予定時刻がない場合は、基本設定を画面上だけ補完する
+    if (!data.plannedBedtime) {
+        const plannedBedtime = document.getElementById("plannedBedtime");
+
+        if (plannedBedtime) {
+            plannedBedtime.value = settings.defaultPlannedBedtime;
+        }
+    }
+
+    if (!data.plannedWakeTime) {
+        const plannedWakeTime = document.getElementById("plannedWakeTime");
+
+        if (plannedWakeTime) {
+            plannedWakeTime.value = settings.defaultPlannedWakeTime;
+        }
+    }
 
     updateAllCalculatedDisplays();
 }
@@ -133,6 +285,7 @@ function saveCurrentRecord() {
     }
 
     renderHistory();
+    updateWeeklySummary();
     updateDeleteButton();
 
     console.log("保存しました", date, records[date]);
@@ -148,6 +301,8 @@ function loadRecord(date) {
         setFormData(records[date]);
         updateSaveStatus(`読み込みました：${date}`, false);
     } else {
+        applyDefaultPlanToForm();
+        updateAllCalculatedDisplays();
         updateSaveStatus(`新しい記録です：${date}`, false);
     }
 
@@ -156,6 +311,7 @@ function loadRecord(date) {
 
     updateAllCalculatedDisplays();
     renderHistory();
+    updateWeeklySummary();
     updateDeleteButton();
 }
 
@@ -218,18 +374,102 @@ function calculateTimeInBedHours(bedtime, wakeTime) {
     return diffMinutes / 60;
 }
 
-// 睡眠効率を計算
-function calculateSleepEfficiency() {
-    const bedtime = document.getElementById("bedtime")?.value;
-    const wakeTime = document.getElementById("wakeTime")?.value;
-    const sleepHoursText = document.getElementById("sleepHours")?.value;
+// 時刻のズレを分で計算
+function calculateClockGapMinutes(plannedTime, actualTime) {
+    const plannedMinutes = timeToMinutes(plannedTime);
+    const actualMinutes = timeToMinutes(actualTime);
 
-    const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
-    const sleepHours = Number(sleepHoursText);
+    if (plannedMinutes === null || actualMinutes === null) {
+        return null;
+    }
+
+    let diff = actualMinutes - plannedMinutes;
+
+    // 日付またぎを考慮して、-12時間〜+12時間の範囲に補正
+    if (diff > 720) {
+        diff -= 1440;
+    }
+
+    if (diff < -720) {
+        diff += 1440;
+    }
+
+    return diff;
+}
+
+// 分を表示用に変換
+function formatGapMinutes(minutes) {
+    if (minutes === null) {
+        return "未計算";
+    }
+
+    if (minutes === 0) {
+        return "±0分";
+    }
+
+    const sign = minutes > 0 ? "+" : "-";
+    const abs = Math.abs(minutes);
+    const hours = Math.floor(abs / 60);
+    const mins = abs % 60;
+
+    if (hours === 0) {
+        return `${sign}${mins}分`;
+    }
+
+    if (mins === 0) {
+        return `${sign}${hours}時間`;
+    }
+
+    return `${sign}${hours}時間${mins}分`;
+}
+
+// サマリー値に色をつける
+function setSummaryClass(element, value, type) {
+    if (!element) {
+        return;
+    }
+
+    element.classList.remove("good", "warning", "danger");
+
+    if (value === null) {
+        return;
+    }
+
+    if (type === "sleepEfficiency") {
+        if (value > 100) {
+            element.classList.add("danger");
+        } else if (value < 70) {
+            element.classList.add("warning");
+        } else {
+            element.classList.add("good");
+        }
+    }
+
+    if (type === "gap") {
+        const abs = Math.abs(value);
+
+        if (abs <= 15) {
+            element.classList.add("good");
+        } else if (abs <= 60) {
+            element.classList.add("warning");
+        } else {
+            element.classList.add("danger");
+        }
+    }
+}
+
+// 記録データから睡眠効率を計算
+function calculateSleepEfficiencyFromRecord(record) {
+    if (!record) {
+        return null;
+    }
+
+    const timeInBedHours = calculateTimeInBedHours(record.bedtime, record.wakeTime);
+    const sleepHours = Number(record.sleepHours);
 
     if (
         timeInBedHours === null ||
-        !sleepHoursText ||
+        record.sleepHours === "" ||
         Number.isNaN(sleepHours) ||
         sleepHours <= 0 ||
         timeInBedHours <= 0
@@ -240,33 +480,55 @@ function calculateSleepEfficiency() {
     return sleepHours / timeInBedHours * 100;
 }
 
+// 現在画面の睡眠効率を計算
+function calculateSleepEfficiency() {
+    const record = getFormData();
+    return calculateSleepEfficiencyFromRecord(record);
+}
+
 // 睡眠サマリーを更新
 function updateSleepSummary() {
+    const plannedBedtime = document.getElementById("plannedBedtime")?.value;
+    const plannedWakeTime = document.getElementById("plannedWakeTime")?.value;
     const bedtime = document.getElementById("bedtime")?.value;
     const wakeTime = document.getElementById("wakeTime")?.value;
-    const timeInBedElement = document.getElementById("timeInBed");
-    const efficiencyElement = document.getElementById("sleepEfficiency");
 
-    const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+    const plannedTimeElement = document.getElementById("plannedTimeInBed");
+    const actualTimeElement = document.getElementById("timeInBed");
+    const efficiencyElement = document.getElementById("sleepEfficiency");
+    const timeGapElement = document.getElementById("timeInBedGap");
+    const bedtimeGapElement = document.getElementById("bedtimeGap");
+    const wakeTimeGapElement = document.getElementById("wakeTimeGap");
+
+    const plannedTimeInBedHours = calculateTimeInBedHours(plannedBedtime, plannedWakeTime);
+    const actualTimeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
     const efficiency = calculateSleepEfficiency();
 
-    if (timeInBedElement) {
-        if (timeInBedHours === null) {
-            timeInBedElement.textContent = "未計算";
-        } else {
-            timeInBedElement.textContent = `${timeInBedHours.toFixed(1)}時間`;
-        }
+    const bedtimeGap = calculateClockGapMinutes(plannedBedtime, bedtime);
+    const wakeTimeGap = calculateClockGapMinutes(plannedWakeTime, wakeTime);
+
+    let timeInBedGapMinutes = null;
+
+    if (plannedTimeInBedHours !== null && actualTimeInBedHours !== null) {
+        timeInBedGapMinutes = Math.round((actualTimeInBedHours - plannedTimeInBedHours) * 60);
+    }
+
+    if (plannedTimeElement) {
+        plannedTimeElement.textContent =
+            plannedTimeInBedHours === null ? "未計算" : `${plannedTimeInBedHours.toFixed(1)}時間`;
+    }
+
+    if (actualTimeElement) {
+        actualTimeElement.textContent =
+            actualTimeInBedHours === null ? "未計算" : `${actualTimeInBedHours.toFixed(1)}時間`;
     }
 
     if (efficiencyElement) {
-        efficiencyElement.classList.remove("warning", "danger");
+        efficiencyElement.classList.remove("good", "warning", "danger");
 
         if (efficiency === null) {
             efficiencyElement.textContent = "未計算";
-            return;
-        }
-
-        if (efficiency > 100) {
+        } else if (efficiency > 100) {
             efficiencyElement.textContent = `${efficiency.toFixed(1)}% 要確認`;
             efficiencyElement.classList.add("danger");
         } else if (efficiency < 70) {
@@ -274,7 +536,23 @@ function updateSleepSummary() {
             efficiencyElement.classList.add("warning");
         } else {
             efficiencyElement.textContent = `${efficiency.toFixed(1)}%`;
+            efficiencyElement.classList.add("good");
         }
+    }
+
+    if (timeGapElement) {
+        timeGapElement.textContent = formatGapMinutes(timeInBedGapMinutes);
+        setSummaryClass(timeGapElement, timeInBedGapMinutes, "gap");
+    }
+
+    if (bedtimeGapElement) {
+        bedtimeGapElement.textContent = formatGapMinutes(bedtimeGap);
+        setSummaryClass(bedtimeGapElement, bedtimeGap, "gap");
+    }
+
+    if (wakeTimeGapElement) {
+        wakeTimeGapElement.textContent = formatGapMinutes(wakeTimeGap);
+        setSummaryClass(wakeTimeGapElement, wakeTimeGap, "gap");
     }
 }
 
@@ -304,6 +582,8 @@ function checkRange(valueText, label, min, max) {
 function validateCurrentRecord() {
     const warnings = [];
 
+    const plannedBedtime = document.getElementById("plannedBedtime")?.value;
+    const plannedWakeTime = document.getElementById("plannedWakeTime")?.value;
     const bedtime = document.getElementById("bedtime")?.value;
     const wakeTime = document.getElementById("wakeTime")?.value;
     const sleepHoursText = document.getElementById("sleepHours")?.value;
@@ -314,10 +594,19 @@ function validateCurrentRecord() {
     const focusText = document.getElementById("focus")?.value;
     const studyTotalText = document.getElementById("studyTotal")?.value;
 
-    const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+    const actualTimeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+    const plannedTimeInBedHours = calculateTimeInBedHours(plannedBedtime, plannedWakeTime);
     const sleepHours = Number(sleepHoursText);
     const awakeCount = Number(awakeCountText);
     const studyTotal = Number(studyTotalText);
+
+    if (plannedTimeInBedHours !== null && plannedTimeInBedHours > 14) {
+        warnings.push("予定在床時間が14時間を超えています。予定時刻を確認してください");
+    }
+
+    if (actualTimeInBedHours !== null && actualTimeInBedHours > 16) {
+        warnings.push("実際在床時間が16時間を超えています。就寝・起床時刻を確認してください");
+    }
 
     if (sleepHoursText !== "") {
         if (Number.isNaN(sleepHours)) {
@@ -331,8 +620,8 @@ function validateCurrentRecord() {
                 warnings.push("実睡眠時間が16時間を超えています。入力値を確認してください");
             }
 
-            if (timeInBedHours !== null && sleepHours > timeInBedHours) {
-                warnings.push("実睡眠時間が在床時間を超えています。入力値を確認してください");
+            if (actualTimeInBedHours !== null && sleepHours > actualTimeInBedHours) {
+                warnings.push("実睡眠時間が実際在床時間を超えています。入力値を確認してください");
             }
         }
     }
@@ -412,6 +701,110 @@ function updateAllCalculatedDisplays() {
     updateWarnings();
 }
 
+// 数値として使えるか確認
+function getNumberOrNull(valueText) {
+    if (valueText === "" || valueText === undefined || valueText === null) {
+        return null;
+    }
+
+    const value = Number(valueText);
+
+    if (Number.isNaN(value)) {
+        return null;
+    }
+
+    return value;
+}
+
+// 直近7日サマリーを更新
+function updateWeeklySummary() {
+    const records = getRecords();
+    const dates = Object.keys(records)
+        .filter(date => {
+            const diff = getDaysDiff(date);
+            return diff >= 0 && diff <= 6;
+        });
+
+    const sleepValues = [];
+    const efficiencyValues = [];
+    const focusValues = [];
+    let studyTotal = 0;
+    let hasStudyData = false;
+
+    dates.forEach(date => {
+        const record = records[date];
+
+        const sleepHours = getNumberOrNull(record.sleepHours);
+        if (sleepHours !== null) {
+            sleepValues.push(sleepHours);
+        }
+
+        const efficiency = calculateSleepEfficiencyFromRecord(record);
+        if (efficiency !== null && efficiency <= 100) {
+            efficiencyValues.push(efficiency);
+        }
+
+        const focus = getNumberOrNull(record.focus);
+        if (focus !== null) {
+            focusValues.push(focus);
+        }
+
+        const study = getNumberOrNull(record.studyTotal);
+        if (study !== null) {
+            studyTotal += study;
+            hasStudyData = true;
+        }
+    });
+
+    setText("weeklyAvgSleep", averageText(sleepValues, "時間"));
+    setText("weeklyAvgEfficiency", averageText(efficiencyValues, "%"));
+    setText("weeklyStudyTotal", hasStudyData ? `${studyTotal}分` : "未計算");
+    setText("weeklyAvgFocus", averageText(focusValues, ""));
+}
+
+// 平均値の表示
+function averageText(values, unit) {
+    if (values.length === 0) {
+        return "未計算";
+    }
+
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const average = total / values.length;
+
+    if (unit === "%") {
+        return `${average.toFixed(1)}%`;
+    }
+
+    if (unit === "時間") {
+        return `${average.toFixed(1)}時間`;
+    }
+
+    return average.toFixed(1);
+}
+
+// テキストを設定
+function setText(id, text) {
+    const element = document.getElementById(id);
+
+    if (element) {
+        element.textContent = text;
+    }
+}
+
+// 履歴フィルターに応じて日付を絞る
+function filterDates(dates) {
+    if (historyFilter === "all") {
+        return dates;
+    }
+
+    const limit = Number(historyFilter);
+
+    return dates.filter(date => {
+        const diff = getDaysDiff(date);
+        return diff >= 0 && diff <= limit - 1;
+    });
+}
+
 // 履歴一覧を表示
 function renderHistory() {
     const historyList = document.getElementById("historyList");
@@ -421,14 +814,23 @@ function renderHistory() {
     }
 
     const records = getRecords();
-    const dates = Object.keys(records).sort().reverse();
+    const allDates = Object.keys(records).sort().reverse();
+    const dates = filterDates(allDates);
 
     historyList.innerHTML = "";
+
+    if (allDates.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "まだ記録がありません";
+        historyList.appendChild(empty);
+        return;
+    }
 
     if (dates.length === 0) {
         const empty = document.createElement("p");
         empty.className = "empty";
-        empty.textContent = "まだ記録がありません";
+        empty.textContent = "この期間の記録はありません";
         historyList.appendChild(empty);
         return;
     }
@@ -443,27 +845,15 @@ function renderHistory() {
 
         const record = records[date];
 
-        const bedtime = record.bedtime || "";
-        const wakeTime = record.wakeTime || "";
-        const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
-        const sleepHoursText = record.sleepHours || "";
-        const sleepHours = Number(sleepHoursText);
-
-        let efficiencyText = "効率 未計算";
-
-        if (
-            timeInBedHours !== null &&
-            sleepHoursText !== "" &&
-            !Number.isNaN(sleepHours) &&
-            sleepHours > 0
-        ) {
-            const efficiency = sleepHours / timeInBedHours * 100;
-            efficiencyText = `効率 ${efficiency.toFixed(1)}%`;
-        }
+        const efficiency = calculateSleepEfficiencyFromRecord(record);
 
         const sleepText = record.sleepHours
             ? `実睡眠 ${record.sleepHours}h`
             : "実睡眠 未入力";
+
+        const efficiencyText = efficiency !== null
+            ? `効率 ${efficiency.toFixed(1)}%`
+            : "効率 未計算";
 
         const studyText = record.studyTotal
             ? `勉強 ${record.studyTotal}分`
@@ -473,7 +863,17 @@ function renderHistory() {
             ? `勤務 ${record.workType}`
             : "勤務 未入力";
 
-        button.textContent = `${date}　${sleepText}　${efficiencyText}　${studyText}　${workText}`;
+        const planText =
+            record.plannedBedtime && record.plannedWakeTime
+                ? `予定 ${record.plannedBedtime}-${record.plannedWakeTime}`
+                : "予定 未入力";
+
+        button.innerHTML = `
+            <span class="history-date">${date}</span>
+            <span class="history-detail">${planText}</span>
+            <span class="history-detail">${sleepText}　${efficiencyText}</span>
+            <span class="history-detail">${studyText}　${workText}</span>
+        `;
 
         button.addEventListener("click", () => {
             const dateElement = document.getElementById("recordDate");
@@ -486,6 +886,25 @@ function renderHistory() {
         });
 
         historyList.appendChild(button);
+    });
+}
+
+// 履歴フィルターのイベントを設定
+function setupHistoryFilterEvents() {
+    const buttons = document.querySelectorAll(".filter-button");
+
+    buttons.forEach(button => {
+        button.addEventListener("click", () => {
+            historyFilter = button.dataset.filter;
+
+            buttons.forEach(item => {
+                item.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            renderHistory();
+        });
     });
 }
 
@@ -530,14 +949,166 @@ function deleteCurrentRecord() {
     setRecords(records);
 
     clearForm();
+    applyDefaultPlanToForm();
+
     currentDate = date;
     localStorage.setItem(LAST_DATE_KEY, date);
 
+    updateAllCalculatedDisplays();
     updateSaveStatus(`削除しました：${date}`, false);
     renderHistory();
+    updateWeeklySummary();
     updateDeleteButton();
 
     console.log("削除しました", date);
+}
+
+// バックアップファイルをダウンロード
+function exportData() {
+    const records = getRecords();
+    const settings = getSettings();
+
+    const backupData = {
+        appName: "CPA Life Analyzer",
+        version: "2.8",
+        exportedAt: new Date().toISOString(),
+        settings: settings,
+        records: records
+    };
+
+    const jsonText = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonText], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const fileName = `cpa-life-analyzer-backup-${getTodayString()}.json`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+    updateSaveStatus(`バックアップを作成しました：${fileName}`, false);
+}
+
+// 復元データの形式チェック
+function normalizeImportedRecords(importedData) {
+    if (!importedData) {
+        return null;
+    }
+
+    // v2.7以降の形式
+    if (
+        importedData.records &&
+        typeof importedData.records === "object" &&
+        !Array.isArray(importedData.records)
+    ) {
+        return importedData.records;
+    }
+
+    // recordsだけを直接JSON化した形式にも対応
+    if (typeof importedData === "object" && !Array.isArray(importedData)) {
+        return importedData;
+    }
+
+    return null;
+}
+
+// 復元データから設定を取得
+function normalizeImportedSettings(importedData) {
+    if (
+        importedData &&
+        importedData.settings &&
+        typeof importedData.settings === "object" &&
+        !Array.isArray(importedData.settings)
+    ) {
+        return {
+            defaultPlannedBedtime: importedData.settings.defaultPlannedBedtime || "",
+            defaultPlannedWakeTime: importedData.settings.defaultPlannedWakeTime || ""
+        };
+    }
+
+    return null;
+}
+
+// JSONファイルから復元
+function importDataFromFile(file) {
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = event => {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            const importedRecords = normalizeImportedRecords(importedData);
+            const importedSettings = normalizeImportedSettings(importedData);
+
+            if (!importedRecords) {
+                window.alert("復元できません。JSONの形式が正しくありません。");
+                return;
+            }
+
+            const count = Object.keys(importedRecords).length;
+
+            const confirmed = window.confirm(
+                `JSONファイルから ${count} 件の記録を復元します。\n現在のデータは上書きされます。\n実行しますか？`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            setRecords(importedRecords);
+
+            if (importedSettings) {
+                setSettings(importedSettings);
+                loadSettingsToForm();
+            }
+
+            const dateElement = document.getElementById("recordDate");
+            const records = getRecords();
+            const dates = Object.keys(records).sort().reverse();
+
+            const nextDate = dates[0] || getTodayString();
+
+            if (dateElement) {
+                dateElement.value = nextDate;
+            }
+
+            loadRecord(nextDate);
+
+            updateSaveStatus(`復元しました：${count}件`, false);
+            window.alert("復元が完了しました。");
+        } catch (error) {
+            console.error(error);
+            window.alert("復元に失敗しました。JSONファイルを確認してください。");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+// バックアップ・復元イベントを設定
+function setupBackupEvents() {
+    const exportButton = document.getElementById("exportButton");
+    const importFile = document.getElementById("importFile");
+
+    if (exportButton) {
+        exportButton.addEventListener("click", exportData);
+    }
+
+    if (importFile) {
+        importFile.addEventListener("change", event => {
+            const file = event.target.files[0];
+            importDataFromFile(file);
+
+            // 同じファイルをもう一度選べるようにする
+            event.target.value = "";
+        });
+    }
 }
 
 // 入力イベントを設定
@@ -582,6 +1153,17 @@ function setupDeleteEvent() {
     button.addEventListener("click", deleteCurrentRecord);
 }
 
+// 設定イベントを設定
+function setupSettingsEvents() {
+    const button = document.getElementById("saveSettingsButton");
+
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener("click", saveSettingsFromForm);
+}
+
 // 初期化
 window.addEventListener("load", () => {
     const dateElement = document.getElementById("recordDate");
@@ -591,6 +1173,8 @@ window.addEventListener("load", () => {
         return;
     }
 
+    loadSettingsToForm();
+
     const lastDate = localStorage.getItem(LAST_DATE_KEY);
     const startDate = lastDate || getTodayString();
 
@@ -598,10 +1182,17 @@ window.addEventListener("load", () => {
     currentDate = startDate;
 
     loadRecord(startDate);
+
     setupInputEvents();
     setupDateEvent();
     setupDeleteEvent();
+    setupBackupEvents();
+    setupHistoryFilterEvents();
+    setupSettingsEvents();
+
     updateDeleteButton();
+    updateWeeklySummary();
+    updateSettingsStatus();
 
     console.log("初期化完了");
 });
