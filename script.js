@@ -1,6 +1,6 @@
-// CPA Life Analyzer v3.5
+// CPA Life Analyzer v4.1
 
-console.log("CPA Life Analyzer v3.5 起動");
+console.log("CPA Life Analyzer v4.1 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -32,6 +32,7 @@ const ratingFields = [
 
 let currentDate = "";
 let historyFilter = "7";
+let activeConditionChartKey = "";
 
 // ==============================
 // 日付・時刻
@@ -349,6 +350,7 @@ function saveCurrentRecord() {
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
+    updateCharts();
 
     console.log("保存しました", date, records[date]);
 }
@@ -377,6 +379,7 @@ function loadRecord(date) {
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
+    updateCharts();
 }
 
 function updateSaveStatus(message, hasWarning) {
@@ -1660,6 +1663,503 @@ function setupAiTextEvents() {
 }
 
 // ==============================
+// グラフ
+// ==============================
+
+function getChartRangeValue() {
+    const select = document.getElementById("chartRange");
+    return select ? select.value : "30";
+}
+
+function getChartDates() {
+    const records = getRecords();
+    const range = getChartRangeValue();
+
+    if (range === "all") {
+        return Object.keys(records).sort();
+    }
+
+    return getRecentDates(Number(range));
+}
+
+function buildChartLabels(dates) {
+    return dates.map(date => {
+        if (dates.length > 40) {
+            return date.slice(5);
+        }
+
+        return formatShortDate(date);
+    });
+}
+
+function buildSeriesFromRecords(dates, key) {
+    const records = getRecords();
+
+    return dates.map(date => {
+        const record = records[date];
+
+        if (!record) {
+            return null;
+        }
+
+        return getNumberOrNull(record[key]);
+    });
+}
+
+function buildGapSeries(dates, gapType) {
+    const records = getRecords();
+
+    return dates.map(date => {
+        const record = records[date];
+
+        if (!record) {
+            return null;
+        }
+
+        const achievement = calculateAchievementFromRecord(record);
+
+        if (!achievement) {
+            return null;
+        }
+
+        if (gapType === "bedtime") {
+            return achievement.bedtimeGap;
+        }
+
+        if (gapType === "wake") {
+            return achievement.wakeTimeGap;
+        }
+
+        return null;
+    });
+}
+
+function resizeCanvasForDisplay(canvas) {
+    const rect = canvas.getBoundingClientRect();
+
+    if (rect.width === 0) {
+        return;
+    }
+
+    const ratio = window.devicePixelRatio || 1;
+    const displayWidth = Math.floor(rect.width);
+    const displayHeight = Math.floor(displayWidth * 0.4);
+
+    canvas.width = displayWidth * ratio;
+    canvas.height = displayHeight * ratio;
+
+    const context = canvas.getContext("2d");
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function drawEmptyChart(canvasId, message) {
+    const canvas = document.getElementById(canvasId);
+
+    if (!canvas) {
+        return;
+    }
+
+    resizeCanvasForDisplay(canvas);
+
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    const height = canvas.height / (window.devicePixelRatio || 1);
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#64748b";
+    ctx.font = "14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(message, width / 2, height / 2);
+}
+
+function hasVisibleData(datasets) {
+    return datasets.some(dataset => {
+        return dataset.values.some(value => value !== null && value !== undefined && !Number.isNaN(value));
+    });
+}
+
+function orderDatasetsForHighlight(datasets, activeKey) {
+    if (!activeKey) {
+        return datasets;
+    }
+
+    const inactive = datasets.filter(dataset => dataset.key !== activeKey);
+    const active = datasets.filter(dataset => dataset.key === activeKey);
+
+    return [...inactive, ...active];
+}
+
+function drawLineChart(config) {
+    const canvas = document.getElementById(config.canvasId);
+
+    if (!canvas) {
+        return;
+    }
+
+    resizeCanvasForDisplay(canvas);
+
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    const height = canvas.height / (window.devicePixelRatio || 1);
+
+    const padding = {
+        top: 24,
+        right: 16,
+        bottom: 42,
+        left: 44
+    };
+
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const labels = config.labels || [];
+    const datasets = config.datasets || [];
+
+    if (labels.length === 0 || !hasVisibleData(datasets)) {
+        drawEmptyChart(config.canvasId, "表示できるデータがありません");
+        return;
+    }
+
+    const allValues = [];
+
+    datasets.forEach(dataset => {
+        dataset.values.forEach(value => {
+            if (value !== null && value !== undefined && !Number.isNaN(value)) {
+                allValues.push(value);
+            }
+        });
+    });
+
+    let minValue = config.minValue !== undefined ? config.minValue : Math.min(...allValues);
+    let maxValue = config.maxValue !== undefined ? config.maxValue : Math.max(...allValues);
+
+    if (minValue === maxValue) {
+        minValue -= 1;
+        maxValue += 1;
+    }
+
+    if (config.includeZero) {
+        minValue = Math.min(0, minValue);
+        maxValue = Math.max(0, maxValue);
+    }
+
+    const valueRange = maxValue - minValue;
+
+    function xForIndex(index) {
+        if (labels.length === 1) {
+            return padding.left + chartWidth / 2;
+        }
+
+        return padding.left + chartWidth * index / (labels.length - 1);
+    }
+
+    function yForValue(value) {
+        return padding.top + chartHeight - ((value - minValue) / valueRange) * chartHeight;
+    }
+
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 1;
+
+    for (let i = 0; i <= 4; i++) {
+        const y = padding.top + chartHeight * i / 4;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+
+        const value = maxValue - valueRange * i / 4;
+        ctx.fillStyle = "#64748b";
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(value.toFixed(config.valueDecimals ?? 0), padding.left - 6, y + 4);
+    }
+
+    if (config.includeZero && minValue < 0 && maxValue > 0) {
+        const zeroY = yForValue(0);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, zeroY);
+        ctx.lineTo(padding.left + chartWidth, zeroY);
+        ctx.stroke();
+    }
+
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, padding.top + chartHeight);
+    ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+    ctx.stroke();
+
+    const labelStep = labels.length <= 8 ? 1 : Math.ceil(labels.length / 6);
+
+    labels.forEach((label, index) => {
+        if (index % labelStep !== 0 && index !== labels.length - 1) {
+            return;
+        }
+
+        const x = xForIndex(index);
+        ctx.fillStyle = "#64748b";
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(label, x, padding.top + chartHeight + 18);
+    });
+
+    const drawDatasets = orderDatasetsForHighlight(datasets, config.activeKey);
+
+    drawDatasets.forEach(dataset => {
+        const isActive = config.activeKey && dataset.key === config.activeKey;
+        const isInactive = config.activeKey && dataset.key !== config.activeKey;
+
+        ctx.strokeStyle = dataset.color;
+        ctx.fillStyle = dataset.color;
+        ctx.lineWidth = isActive ? 4 : isInactive ? 1.5 : 2;
+        ctx.globalAlpha = isInactive ? 0.22 : 1;
+
+        let drawing = false;
+
+        dataset.values.forEach((value, index) => {
+            if (value === null || value === undefined || Number.isNaN(value)) {
+                drawing = false;
+                return;
+            }
+
+            const x = xForIndex(index);
+            const y = yForValue(value);
+
+            if (!drawing) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                drawing = true;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+
+        dataset.values.forEach((value, index) => {
+            if (value === null || value === undefined || Number.isNaN(value)) {
+                return;
+            }
+
+            const x = xForIndex(index);
+            const y = yForValue(value);
+            const radius = isActive ? 5 : isInactive ? 2 : 3;
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        ctx.globalAlpha = 1;
+    });
+
+    if (datasets.length > 1 && config.showLegend !== false) {
+        let legendX = padding.left;
+        const legendY = 14;
+
+        datasets.forEach(dataset => {
+            const isActive = config.activeKey && dataset.key === config.activeKey;
+            const isInactive = config.activeKey && dataset.key !== config.activeKey;
+
+            ctx.globalAlpha = isInactive ? 0.35 : 1;
+            ctx.fillStyle = dataset.color;
+            ctx.fillRect(legendX, legendY - 8, 10, 10);
+
+            ctx.fillStyle = isActive ? "#111827" : "#334155";
+            ctx.font = isActive ? "bold 12px sans-serif" : "12px sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText(dataset.label, legendX + 14, legendY);
+
+            ctx.globalAlpha = 1;
+            legendX += dataset.label.length * 12 + 42;
+        });
+    }
+}
+
+function getConditionDatasetLabel(key) {
+    if (key === "mood") {
+        return "気分";
+    }
+
+    if (key === "sleepiness") {
+        return "眠気";
+    }
+
+    if (key === "fatigue") {
+        return "疲労";
+    }
+
+    if (key === "focus") {
+        return "集中力";
+    }
+
+    return "なし";
+}
+
+function updateConditionChartButtons() {
+    const buttons = document.querySelectorAll(".condition-chart-button");
+    const status = document.getElementById("conditionChartFocusStatus");
+
+    buttons.forEach(button => {
+        if (button.dataset.conditionKey === activeConditionChartKey) {
+            button.classList.add("active");
+        } else {
+            button.classList.remove("active");
+        }
+    });
+
+    if (status) {
+        if (activeConditionChartKey) {
+            status.textContent = `現在の強調：${getConditionDatasetLabel(activeConditionChartKey)}`;
+        } else {
+            status.textContent = "現在の強調：なし（全項目表示）";
+        }
+    }
+}
+
+function updateCharts() {
+    const dates = getChartDates();
+
+    if (!dates || dates.length === 0) {
+        drawEmptyChart("sleepChart", "記録がありません");
+        drawEmptyChart("studyChart", "記録がありません");
+        drawEmptyChart("conditionChart", "記録がありません");
+        drawEmptyChart("gapChart", "記録がありません");
+        updateConditionChartButtons();
+        return;
+    }
+
+    const labels = buildChartLabels(dates);
+
+    drawLineChart({
+        canvasId: "sleepChart",
+        labels: labels,
+        minValue: 0,
+        maxValue: 12,
+        valueDecimals: 1,
+        includeZero: true,
+        datasets: [
+            {
+                key: "sleepHours",
+                label: "実睡眠",
+                color: "#2563eb",
+                values: buildSeriesFromRecords(dates, "sleepHours")
+            }
+        ]
+    });
+
+    drawLineChart({
+        canvasId: "studyChart",
+        labels: labels,
+        minValue: 0,
+        valueDecimals: 0,
+        includeZero: true,
+        datasets: [
+            {
+                key: "studyTotal",
+                label: "勉強時間",
+                color: "#16a34a",
+                values: buildSeriesFromRecords(dates, "studyTotal")
+            }
+        ]
+    });
+
+    drawLineChart({
+        canvasId: "conditionChart",
+        labels: labels,
+        minValue: 0,
+        maxValue: 10,
+        valueDecimals: 0,
+        includeZero: true,
+        activeKey: activeConditionChartKey,
+        showLegend: false,
+        datasets: [
+            {
+                key: "mood",
+                label: "気分",
+                color: "#db2777",
+                values: buildSeriesFromRecords(dates, "mood")
+            },
+            {
+                key: "sleepiness",
+                label: "眠気",
+                color: "#f59e0b",
+                values: buildSeriesFromRecords(dates, "sleepiness")
+            },
+            {
+                key: "fatigue",
+                label: "疲労",
+                color: "#dc2626",
+                values: buildSeriesFromRecords(dates, "fatigue")
+            },
+            {
+                key: "focus",
+                label: "集中力",
+                color: "#7c3aed",
+                values: buildSeriesFromRecords(dates, "focus")
+            }
+        ]
+    });
+
+    drawLineChart({
+        canvasId: "gapChart",
+        labels: labels,
+        valueDecimals: 0,
+        includeZero: true,
+        datasets: [
+            {
+                key: "bedtimeGap",
+                label: "就寝ズレ",
+                color: "#0f766e",
+                values: buildGapSeries(dates, "bedtime")
+            },
+            {
+                key: "wakeTimeGap",
+                label: "起床ズレ",
+                color: "#ea580c",
+                values: buildGapSeries(dates, "wake")
+            }
+        ]
+    });
+
+    updateConditionChartButtons();
+}
+
+function setupChartEvents() {
+    const chartRange = document.getElementById("chartRange");
+    const conditionButtons = document.querySelectorAll(".condition-chart-button");
+
+    if (chartRange) {
+        chartRange.addEventListener("change", updateCharts);
+    }
+
+    conditionButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            const key = button.dataset.conditionKey;
+
+            if (activeConditionChartKey === key) {
+                activeConditionChartKey = "";
+            } else {
+                activeConditionChartKey = key;
+            }
+
+            updateCharts();
+        });
+    });
+
+    window.addEventListener("resize", () => {
+        updateCharts();
+    });
+}
+
+// ==============================
 // サマリー
 // ==============================
 
@@ -2175,6 +2675,7 @@ function deleteCurrentRecord() {
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
+    updateCharts();
 
     console.log("削除しました", date);
 }
@@ -2185,7 +2686,7 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "3.5",
+        version: "4.1",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records
@@ -2291,6 +2792,7 @@ function importDataFromFile(file) {
             loadRecord(nextDate);
 
             updateSaveStatus(`復元しました：${count}件`, false);
+            updateCharts();
             window.alert("復元が完了しました。");
         } catch (error) {
             console.error(error);
@@ -2409,6 +2911,7 @@ window.addEventListener("load", () => {
     setupHistoryFilterEvents();
     setupSettingsEvents();
     setupAiTextEvents();
+    setupChartEvents();
 
     updateRatingDisplays();
     updateTodayAdvice();
@@ -2417,6 +2920,7 @@ window.addEventListener("load", () => {
     updateWeeklySummary();
     updateAchievementSummary();
     updateSettingsStatus();
+    updateCharts();
 
     console.log("初期化完了");
 });

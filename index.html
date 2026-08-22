@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v3.5</title>
+    <title>CPA Life Analyzer v4.1</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -357,6 +357,67 @@
             </p>
         </section>
 
+        <section class="card graph-card">
+            <h2>📈 グラフ分析</h2>
+
+            <p class="hint">
+                記録済みデータをグラフで確認します。点が少ない場合は、記録が増えるほど見やすくなります。
+            </p>
+
+            <label for="chartRange">表示期間</label>
+            <select id="chartRange">
+                <option value="7">直近7日</option>
+                <option value="30" selected>直近30日</option>
+                <option value="all">すべて</option>
+            </select>
+
+            <div class="chart-block">
+                <h3>睡眠時間</h3>
+                <canvas id="sleepChart" width="700" height="280"></canvas>
+                <p class="chart-note">実睡眠時間を表示します。単位は時間です。</p>
+            </div>
+
+            <div class="chart-block">
+                <h3>勉強時間</h3>
+                <canvas id="studyChart" width="700" height="280"></canvas>
+                <p class="chart-note">総勉強時間を表示します。単位は分です。</p>
+            </div>
+
+            <div class="chart-block">
+                <h3>体調</h3>
+
+                <div class="condition-chart-controls" aria-label="体調グラフの強調項目">
+                    <button type="button" class="condition-chart-button" data-condition-key="mood">
+                        気分
+                    </button>
+                    <button type="button" class="condition-chart-button" data-condition-key="sleepiness">
+                        眠気
+                    </button>
+                    <button type="button" class="condition-chart-button" data-condition-key="fatigue">
+                        疲労
+                    </button>
+                    <button type="button" class="condition-chart-button" data-condition-key="focus">
+                        集中力
+                    </button>
+                </div>
+
+                <p id="conditionChartFocusStatus" class="chart-focus-status">
+                    現在の強調：なし（全項目表示）
+                </p>
+
+                <canvas id="conditionChart" width="700" height="280"></canvas>
+                <p class="chart-note">
+                    気分・眠気・疲労・集中力を1〜10で表示します。上の項目を押すと、その線を強調できます。
+                </p>
+            </div>
+
+            <div class="chart-block">
+                <h3>予定ズレ</h3>
+                <canvas id="gapChart" width="700" height="280"></canvas>
+                <p class="chart-note">就寝ズレ・起床ズレを分で表示します。プラスは予定より遅い、マイナスは予定より早いことを示します。</p>
+            </div>
+        </section>
+
         <section class="card">
             <h2>📖 記録履歴</h2>
 
@@ -401,7 +462,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v3.5</p>
+        <p>CPA Life Analyzer v4.1</p>
     </footer>
 
     <script src="script.js"></script>
