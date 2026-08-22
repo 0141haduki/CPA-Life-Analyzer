@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v4.1 */
+/* CPA Life Analyzer v4.3 */
 
 * {
     box-sizing: border-box;
@@ -129,6 +129,160 @@ textarea {
 
 .advice-list li.priority-good {
     color: #15803d;
+}
+
+/* 自動検知 */
+.detection-card {
+    border-left: 5px solid #f97316;
+    background: #fff7ed;
+}
+
+.detection-summary,
+.correlation-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.auto-alert-list,
+.correlation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.alert-item,
+.correlation-item {
+    padding: 12px;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+}
+
+.alert-item.high {
+    border-left: 6px solid #dc2626;
+    background: #fef2f2;
+}
+
+.alert-item.medium {
+    border-left: 6px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.alert-item.good {
+    border-left: 6px solid #16a34a;
+    background: #f0fdf4;
+}
+
+.alert-level,
+.correlation-level {
+    display: inline-block;
+    margin-bottom: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.alert-level.high {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.alert-level.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.alert-level.good {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.alert-title,
+.correlation-title {
+    margin: 2px 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #1f2937;
+}
+
+.alert-message,
+.correlation-message {
+    margin: 0;
+    font-size: 14px;
+    color: #334155;
+}
+
+.alert-action,
+.correlation-note-text {
+    margin: 6px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+}
+
+/* 相関分析 */
+.correlation-card {
+    border-left: 5px solid #7c3aed;
+    background: #f5f3ff;
+}
+
+.correlation-item.strong {
+    border-left: 6px solid #7c3aed;
+    background: #faf5ff;
+}
+
+.correlation-item.middle {
+    border-left: 6px solid #2563eb;
+    background: #eff6ff;
+}
+
+.correlation-item.weak {
+    border-left: 6px solid #64748b;
+    background: #f8fafc;
+}
+
+.correlation-item.insufficient {
+    border-left: 6px solid #cbd5e1;
+    background: #f8fafc;
+}
+
+.correlation-level.strong {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.correlation-level.middle {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.correlation-level.weak {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.correlation-level.insufficient {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.correlation-r {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #111827;
+}
+
+.correlation-warning {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #92400e;
+    font-weight: 700;
 }
 
 /* AI相談用テキスト */
@@ -742,6 +896,11 @@ textarea {
 
     .condition-chart-controls {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .detection-summary,
+    .correlation-summary {
+        grid-template-columns: 1fr;
     }
 }
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v4.1</title>
+    <title>CPA Life Analyzer v4.3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -37,6 +37,74 @@
 
             <p id="adviceStatus" class="hint">
                 ※ 外部AIは使わず、入力値にもとづくルール式のアドバイスです。
+            </p>
+        </section>
+
+        <section class="card detection-card">
+            <h2>🧪 自動検知</h2>
+
+            <p class="hint">
+                直近の記録から、生活・睡眠・勉強で注意すべき点を自動判定します。
+            </p>
+
+            <div class="detection-summary">
+                <div class="summary-box">
+                    <span class="summary-label">警戒</span>
+                    <span id="alertHighCount" class="summary-value">0件</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">注意</span>
+                    <span id="alertMediumCount" class="summary-value">0件</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">良好</span>
+                    <span id="alertGoodCount" class="summary-value">0件</span>
+                </div>
+            </div>
+
+            <div id="autoAlertList" class="auto-alert-list">
+                <p class="empty">記録が増えると、自動検知結果を表示します。</p>
+            </div>
+
+            <p class="hint">
+                ※ 医学的診断ではありません。生活記録にもとづく確認候補です。
+            </p>
+        </section>
+
+        <section class="card correlation-card">
+            <h2>🔍 相関分析</h2>
+
+            <p class="hint">
+                直近30日または全期間のデータから、項目同士の関係を計算します。
+                相関は原因を示すものではなく、「関係がありそうな確認候補」です。
+            </p>
+
+            <label for="correlationRange">分析期間</label>
+            <select id="correlationRange">
+                <option value="30" selected>直近30日</option>
+                <option value="all">すべて</option>
+            </select>
+
+            <div class="correlation-summary">
+                <div class="summary-box">
+                    <span class="summary-label">有効な相関</span>
+                    <span id="correlationValidCount" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">最強の相関</span>
+                    <span id="correlationTopStrength" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div id="correlationList" class="correlation-list">
+                <p class="empty">記録が増えると、相関分析を表示します。</p>
+            </div>
+
+            <p class="hint">
+                ※ 同じ日に両方の数値が入力されているデータが少ない場合は、参考値またはデータ不足として扱います。
             </p>
         </section>
 
@@ -414,7 +482,9 @@
             <div class="chart-block">
                 <h3>予定ズレ</h3>
                 <canvas id="gapChart" width="700" height="280"></canvas>
-                <p class="chart-note">就寝ズレ・起床ズレを分で表示します。プラスは予定より遅い、マイナスは予定より早いことを示します。</p>
+                <p class="chart-note">
+                    就寝ズレ・起床ズレを分で表示します。プラスは予定より遅い、マイナスは予定より早いことを示します。
+                </p>
             </div>
         </section>
 
@@ -462,7 +532,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v4.1</p>
+        <p>CPA Life Analyzer v4.3</p>
     </footer>
 
     <script src="script.js"></script>

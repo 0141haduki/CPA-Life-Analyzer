@@ -1,6 +1,6 @@
-// CPA Life Analyzer v4.1
+// CPA Life Analyzer v4.3
 
-console.log("CPA Life Analyzer v4.1 起動");
+console.log("CPA Life Analyzer v4.3 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -48,9 +48,7 @@ function getTodayString() {
 
 function getCurrentTimeString() {
     const now = new Date();
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    return `${hours}:${minutes}`;
+    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
 function dateStringToDate(dateText) {
@@ -70,10 +68,7 @@ function dateStringToDate(dateText) {
 }
 
 function dateToString(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function addDays(dateText, days) {
@@ -105,8 +100,7 @@ function getDaysDiff(dateText) {
         return 99999;
     }
 
-    const diffMs = today - target;
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return Math.floor((today - target) / (1000 * 60 * 60 * 24));
 }
 
 function getRecentDates(days) {
@@ -202,7 +196,7 @@ function saveSettingsFromForm() {
     const defaultWakeTime = document.getElementById("defaultPlannedWakeTime")?.value || "";
 
     const settings = {
-        defaultPlannedBedtime: defaultBedtime,
+        defaultPlannedBedtime,
         defaultPlannedWakeTime: defaultWakeTime
     };
 
@@ -345,12 +339,7 @@ function saveCurrentRecord() {
         updateSaveStatus(`保存しました：${date} ${getCurrentTimeString()}`, false);
     }
 
-    renderHistory();
-    renderRecordCalendar();
-    updateWeeklySummary();
-    updateAchievementSummary();
-    updateDeleteButton();
-    updateCharts();
+    updateAfterDataChange();
 
     console.log("保存しました", date, records[date]);
 }
@@ -374,12 +363,18 @@ function loadRecord(date) {
     currentDate = date;
 
     updateAllCalculatedDisplays();
+    updateAfterDataChange();
+}
+
+function updateAfterDataChange() {
     renderHistory();
     renderRecordCalendar();
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
     updateCharts();
+    updateAutoAlerts();
+    updateCorrelationAnalysis();
 }
 
 function updateSaveStatus(message, hasWarning) {
@@ -482,7 +477,7 @@ function calculateClockGapMinutes(plannedTime, actualTime) {
 }
 
 function formatGapMinutes(minutes) {
-    if (minutes === null) {
+    if (minutes === null || minutes === undefined || Number.isNaN(minutes)) {
         return "未計算";
     }
 
@@ -515,7 +510,7 @@ function setSummaryClass(element, value, type) {
 
     element.classList.remove("good", "warning", "danger");
 
-    if (value === null) {
+    if (value === null || value === undefined || Number.isNaN(value)) {
         return;
     }
 
@@ -606,9 +601,61 @@ function calculateAchievementFromRecord(record) {
 }
 
 function calculateSleepEfficiency() {
-    const record = getFormData();
-    return calculateSleepEfficiencyFromRecord(record);
+    return calculateSleepEfficiencyFromRecord(getFormData());
 }
+
+function getNumberOrNull(valueText) {
+    if (valueText === "" || valueText === undefined || valueText === null) {
+        return null;
+    }
+
+    const value = Number(valueText);
+
+    if (Number.isNaN(value)) {
+        return null;
+    }
+
+    return value;
+}
+
+function averageNumber(values) {
+    if (!values || values.length === 0) {
+        return null;
+    }
+
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return total / values.length;
+}
+
+function averageText(values, unit) {
+    if (!values || values.length === 0) {
+        return "未計算";
+    }
+
+    const average = averageNumber(values);
+
+    if (unit === "%") {
+        return `${average.toFixed(1)}%`;
+    }
+
+    if (unit === "時間") {
+        return `${average.toFixed(1)}時間`;
+    }
+
+    return average.toFixed(1);
+}
+
+function setText(id, text) {
+    const element = document.getElementById(id);
+
+    if (element) {
+        element.textContent = text;
+    }
+}
+
+// ==============================
+// 睡眠表示
+// ==============================
 
 function updateSleepSummary() {
     const plannedBedtime = document.getElementById("plannedBedtime")?.value;
@@ -677,20 +724,6 @@ function updateSleepSummary() {
         wakeTimeGapElement.textContent = formatGapMinutes(wakeTimeGap);
         setSummaryClass(wakeTimeGapElement, wakeTimeGap, "gap");
     }
-}
-
-function getNumberOrNull(valueText) {
-    if (valueText === "" || valueText === undefined || valueText === null) {
-        return null;
-    }
-
-    const value = Number(valueText);
-
-    if (Number.isNaN(value)) {
-        return null;
-    }
-
-    return value;
 }
 
 // ==============================
@@ -1049,12 +1082,10 @@ function updateTodayAdvice() {
         });
     }
 
-    const limitedItems = adviceItems.slice(0, 5);
-
     main.textContent = mainText;
     list.innerHTML = "";
 
-    limitedItems.forEach(item => {
+    adviceItems.slice(0, 5).forEach(item => {
         addAdviceItem(list, item.text, item.className);
     });
 }
@@ -1068,6 +1099,825 @@ function addAdviceItem(list, text, className) {
     }
 
     list.appendChild(item);
+}
+
+// ==============================
+// 自動検知アラート v4.3
+// ==============================
+
+function makeAlert(level, title, message, action) {
+    return { level, title, message, action };
+}
+
+function getDatesWithRecords(days) {
+    const records = getRecords();
+    let dates;
+
+    if (days === "all") {
+        dates = Object.keys(records).sort();
+    } else {
+        dates = getRecentDates(days);
+    }
+
+    return dates.filter(date => records[date]).sort();
+}
+
+function getRecentRecords(days) {
+    const records = getRecords();
+    const dates = getDatesWithRecords(days);
+
+    return dates.map(date => ({
+        date,
+        record: records[date]
+    }));
+}
+
+function getConsecutiveCountFromEnd(items, predicate) {
+    let count = 0;
+
+    for (let i = items.length - 1; i >= 0; i--) {
+        if (predicate(items[i])) {
+            count += 1;
+        } else {
+            break;
+        }
+    }
+
+    return count;
+}
+
+function detectAutoAlerts() {
+    const alerts = [];
+    const items7 = getRecentRecords(7);
+    const items14 = getRecentRecords(14);
+
+    if (items7.length === 0) {
+        return [
+            makeAlert(
+                "medium",
+                "記録がまだありません",
+                "自動検知を行うには、睡眠・体調・勉強時間の記録が必要です。",
+                "まずは1日1回、睡眠時間と体調だけでも記録してください。"
+            )
+        ];
+    }
+
+    const sleepValues7 = [];
+    const focusValues7 = [];
+    const fatigueValues7 = [];
+    const sleepinessValues7 = [];
+    const studyValues7 = [];
+    const bedtimeGaps7 = [];
+    const wakeTimeGaps7 = [];
+
+    let validAchievementDays = 0;
+    let achievedDays = 0;
+    let nightShiftDays = 0;
+    let nightShiftRecoveryProblem = 0;
+
+    items7.forEach(item => {
+        const record = item.record;
+        const sleep = getNumberOrNull(record.sleepHours);
+        const focus = getNumberOrNull(record.focus);
+        const fatigue = getNumberOrNull(record.fatigue);
+        const sleepiness = getNumberOrNull(record.sleepiness);
+        const study = getNumberOrNull(record.studyTotal);
+        const achievement = calculateAchievementFromRecord(record);
+
+        if (sleep !== null) {
+            sleepValues7.push(sleep);
+        }
+
+        if (focus !== null) {
+            focusValues7.push(focus);
+        }
+
+        if (fatigue !== null) {
+            fatigueValues7.push(fatigue);
+        }
+
+        if (sleepiness !== null) {
+            sleepinessValues7.push(sleepiness);
+        }
+
+        if (study !== null) {
+            studyValues7.push(study);
+        }
+
+        if (achievement) {
+            if (achievement.bedtimeGap !== null) {
+                bedtimeGaps7.push(achievement.bedtimeGap);
+            }
+
+            if (achievement.wakeTimeGap !== null) {
+                wakeTimeGaps7.push(achievement.wakeTimeGap);
+            }
+
+            if (achievement.canJudgeAchievement) {
+                validAchievementDays += 1;
+
+                if (achievement.achieved) {
+                    achievedDays += 1;
+                }
+            }
+        }
+
+        if (isNightShift(record.workType)) {
+            nightShiftDays += 1;
+
+            if (
+                (sleep !== null && sleep < 6) ||
+                (fatigue !== null && fatigue >= 8) ||
+                (sleepiness !== null && sleepiness >= 8)
+            ) {
+                nightShiftRecoveryProblem += 1;
+            }
+        }
+    });
+
+    const shortSleepStreak = getConsecutiveCountFromEnd(items14, item => {
+        const sleep = getNumberOrNull(item.record.sleepHours);
+        return sleep !== null && sleep < 6;
+    });
+
+    const studyZeroStreak = getConsecutiveCountFromEnd(items14, item => {
+        const study = getNumberOrNull(item.record.studyTotal);
+        return study !== null && study === 0;
+    });
+
+    const fatigueHighStreak = getConsecutiveCountFromEnd(items14, item => {
+        const fatigue = getNumberOrNull(item.record.fatigue);
+        return fatigue !== null && fatigue >= 7;
+    });
+
+    const sleepinessHighStreak = getConsecutiveCountFromEnd(items14, item => {
+        const sleepiness = getNumberOrNull(item.record.sleepiness);
+        return sleepiness !== null && sleepiness >= 7;
+    });
+
+    const avgSleep = averageNumber(sleepValues7);
+    const avgFocus = averageNumber(focusValues7);
+    const avgFatigue = averageNumber(fatigueValues7);
+    const avgSleepiness = averageNumber(sleepinessValues7);
+    const avgBedtimeGap = averageNumber(bedtimeGaps7);
+    const avgWakeTimeGap = averageNumber(wakeTimeGaps7);
+
+    const studyDays7 = studyValues7.filter(value => value > 0).length;
+    const achievementRate = validAchievementDays === 0 ? null : achievedDays / validAchievementDays * 100;
+
+    if (shortSleepStreak >= 2) {
+        alerts.push(makeAlert(
+            "high",
+            `実睡眠6時間未満が${shortSleepStreak}日続いています`,
+            "睡眠不足が連続しています。集中力低下、眠気、疲労の悪化につながる可能性があります。",
+            "今日は新規論点を減らし、短答肢チェック・音読・新聞15分など軽いタスクを優先してください。"
+        ));
+    }
+
+    if (avgSleep !== null && avgSleep < 6) {
+        alerts.push(makeAlert(
+            "high",
+            "直近7日の平均実睡眠が6時間未満です",
+            `平均実睡眠は${avgSleep.toFixed(1)}時間です。回復量が足りていない可能性があります。`,
+            "睡眠予定そのものを現実的に修正するか、勤務後の行動を短縮してください。"
+        ));
+    }
+
+    if (sleepValues7.some(value => value >= 9)) {
+        alerts.push(makeAlert(
+            "medium",
+            "9時間以上の睡眠があります",
+            "寝すぎの日が見られます。疲労蓄積、休日の寝だめ、睡眠リズムのズレが背景にある可能性があります。",
+            "睡眠時間だけでなく、疲労・眠気・勤務区分と合わせて確認してください。"
+        ));
+    }
+
+    if (fatigueHighStreak >= 2) {
+        alerts.push(makeAlert(
+            "high",
+            `疲労7以上が${fatigueHighStreak}日続いています`,
+            "疲労が高止まりしています。ここで勉強量を無理に増やすと、翌日以降に崩れる可能性があります。",
+            "今日は勉強量の最大化より、最低限の継続と回復を優先してください。"
+        ));
+    }
+
+    if (sleepinessHighStreak >= 2) {
+        alerts.push(makeAlert(
+            "high",
+            `眠気7以上が${sleepinessHighStreak}日続いています`,
+            "眠気が高止まりしています。睡眠時間・睡眠効率・夜勤後の回復が不足している可能性があります。",
+            "机に向かう前に、短い仮眠・食事・入浴・室温調整のどれかを入れてください。"
+        ));
+    }
+
+    if (avgFocus !== null && avgFocus <= 4) {
+        alerts.push(makeAlert(
+            "medium",
+            "直近7日の平均集中力が低めです",
+            `平均集中力は${avgFocus.toFixed(1)}です。理解系・新規論点に入りにくい状態かもしれません。`,
+            "企業法・監査論は、講義を長く見るより、5〜15分の小さい単位で着手してください。"
+        ));
+    }
+
+    if (studyZeroStreak >= 2) {
+        alerts.push(makeAlert(
+            "medium",
+            `勉強0分が${studyZeroStreak}日続いています`,
+            "勉強の再開ハードルが上がり始める状態です。",
+            "今日は5分だけでも記録を作ってください。量より再開を優先します。"
+        ));
+    }
+
+    if (studyDays7 <= 2 && items7.length >= 4) {
+        alerts.push(makeAlert(
+            "medium",
+            "直近7日の勉強日数が少なめです",
+            `勉強した日は${studyDays7}日です。継続リズムが弱くなっています。`,
+            "毎日長時間ではなく、最低5〜15分の固定枠を作る方が現実的です。"
+        ));
+    }
+
+    if (avgBedtimeGap !== null && Math.abs(avgBedtimeGap) > 60) {
+        alerts.push(makeAlert(
+            "medium",
+            "平均就寝ズレが大きいです",
+            `直近7日の平均就寝ズレは${formatGapMinutes(avgBedtimeGap)}です。予定より寝る時刻がズレています。`,
+            "予定が厳しすぎる可能性があります。就寝予定を30〜60分単位で現実側へ寄せてください。"
+        ));
+    }
+
+    if (avgWakeTimeGap !== null && Math.abs(avgWakeTimeGap) > 60) {
+        alerts.push(makeAlert(
+            "medium",
+            "平均起床ズレが大きいです",
+            `直近7日の平均起床ズレは${formatGapMinutes(avgWakeTimeGap)}です。予定通り起きられていません。`,
+            "起床時刻だけでなく、就寝時刻と睡眠時間の不足を確認してください。"
+        ));
+    }
+
+    if (achievementRate !== null && achievementRate < 40) {
+        alerts.push(makeAlert(
+            "medium",
+            "予定達成率が低めです",
+            `直近7日の予定達成率は${achievementRate.toFixed(0)}%です。現在の睡眠予定が生活実態に合っていない可能性があります。`,
+            "理想予定ではなく、まず守れる予定に修正してください。"
+        ));
+    }
+
+    if (nightShiftDays > 0 && nightShiftRecoveryProblem > 0) {
+        alerts.push(makeAlert(
+            "medium",
+            "夜勤後の回復不足が見られます",
+            `直近7日の夜勤系勤務${nightShiftDays}回のうち、${nightShiftRecoveryProblem}回で睡眠不足・強い疲労・強い眠気が見られます。`,
+            "夜勤後は勉強量を先に決めず、睡眠確保を成功条件にしてください。"
+        ));
+    }
+
+    if (alerts.length === 0) {
+        alerts.push(makeAlert(
+            "good",
+            "大きな警戒サインは見つかっていません",
+            "直近の記録では、睡眠・体調・勉強の大きな崩れは検出されていません。",
+            "このまま記録を続けると、相関分析の精度も上がります。"
+        ));
+    }
+
+    if (avgSleep !== null && avgSleep >= 6.5 && avgFatigue !== null && avgFatigue <= 6 && avgSleepiness !== null && avgSleepiness <= 6) {
+        alerts.push(makeAlert(
+            "good",
+            "睡眠と体調は比較的安定しています",
+            "平均睡眠・疲労・眠気を見る限り、極端な崩れは出ていません。",
+            "集中力が高い日に、苦手科目を小さく進めるとよいです。"
+        ));
+    }
+
+    return alerts.slice(0, 8);
+}
+
+function renderAlertItem(alert) {
+    const item = document.createElement("div");
+    item.className = `alert-item ${alert.level}`;
+
+    const levelText = alert.level === "high" ? "警戒" : alert.level === "medium" ? "注意" : "良好";
+
+    item.innerHTML = `
+        <span class="alert-level ${alert.level}">${levelText}</span>
+        <p class="alert-title">${alert.title}</p>
+        <p class="alert-message">${alert.message}</p>
+        <p class="alert-action">${alert.action}</p>
+    `;
+
+    return item;
+}
+
+function updateAutoAlerts() {
+    const list = document.getElementById("autoAlertList");
+    const highCount = document.getElementById("alertHighCount");
+    const mediumCount = document.getElementById("alertMediumCount");
+    const goodCount = document.getElementById("alertGoodCount");
+
+    if (!list) {
+        return;
+    }
+
+    const alerts = detectAutoAlerts();
+
+    const high = alerts.filter(alert => alert.level === "high").length;
+    const medium = alerts.filter(alert => alert.level === "medium").length;
+    const good = alerts.filter(alert => alert.level === "good").length;
+
+    if (highCount) {
+        highCount.textContent = `${high}件`;
+        highCount.className = high > 0 ? "summary-value danger" : "summary-value";
+    }
+
+    if (mediumCount) {
+        mediumCount.textContent = `${medium}件`;
+        mediumCount.className = medium > 0 ? "summary-value warning" : "summary-value";
+    }
+
+    if (goodCount) {
+        goodCount.textContent = `${good}件`;
+        goodCount.className = good > 0 ? "summary-value good" : "summary-value";
+    }
+
+    list.innerHTML = "";
+
+    alerts.forEach(alert => {
+        list.appendChild(renderAlertItem(alert));
+    });
+}
+
+// ==============================
+// 相関分析 v4.3
+// ==============================
+
+function getCorrelationRangeValue() {
+    const select = document.getElementById("correlationRange");
+    return select ? select.value : "30";
+}
+
+function getCorrelationDates() {
+    const range = getCorrelationRangeValue();
+
+    if (range === "all") {
+        return Object.keys(getRecords()).sort();
+    }
+
+    return getRecentDates(Number(range));
+}
+
+function getMetricValue(record, metricKey) {
+    if (!record) {
+        return null;
+    }
+
+    if (metricKey === "sleepHours") {
+        return getNumberOrNull(record.sleepHours);
+    }
+
+    if (metricKey === "sleepEfficiency") {
+        const value = calculateSleepEfficiencyFromRecord(record);
+        return value !== null && value <= 100 ? value : null;
+    }
+
+    if (metricKey === "mood") {
+        return getNumberOrNull(record.mood);
+    }
+
+    if (metricKey === "sleepiness") {
+        return getNumberOrNull(record.sleepiness);
+    }
+
+    if (metricKey === "fatigue") {
+        return getNumberOrNull(record.fatigue);
+    }
+
+    if (metricKey === "focus") {
+        return getNumberOrNull(record.focus);
+    }
+
+    if (metricKey === "studyTotal") {
+        return getNumberOrNull(record.studyTotal);
+    }
+
+    if (metricKey === "bedtimeGap") {
+        const achievement = calculateAchievementFromRecord(record);
+        return achievement ? achievement.bedtimeGap : null;
+    }
+
+    if (metricKey === "wakeTimeGap") {
+        const achievement = calculateAchievementFromRecord(record);
+        return achievement ? achievement.wakeTimeGap : null;
+    }
+
+    if (metricKey === "nightShift") {
+        return isNightShift(record.workType) ? 1 : 0;
+    }
+
+    return null;
+}
+
+function buildCorrelationPairs(records, dates, xKey, yKey, lagDays) {
+    const pairs = [];
+
+    dates.forEach(date => {
+        const xDate = lagDays ? addDays(date, -lagDays) : date;
+        const yDate = date;
+
+        const xRecord = records[xDate];
+        const yRecord = records[yDate];
+
+        const x = getMetricValue(xRecord, xKey);
+        const y = getMetricValue(yRecord, yKey);
+
+        if (x !== null && y !== null) {
+            pairs.push({ x, y, date: yDate });
+        }
+    });
+
+    return pairs;
+}
+
+function calculatePearsonCorrelation(pairs) {
+    if (!pairs || pairs.length < 2) {
+        return null;
+    }
+
+    const n = pairs.length;
+    const sumX = pairs.reduce((sum, pair) => sum + pair.x, 0);
+    const sumY = pairs.reduce((sum, pair) => sum + pair.y, 0);
+
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+
+    let numerator = 0;
+    let denominatorX = 0;
+    let denominatorY = 0;
+
+    pairs.forEach(pair => {
+        const dx = pair.x - meanX;
+        const dy = pair.y - meanY;
+
+        numerator += dx * dy;
+        denominatorX += dx * dx;
+        denominatorY += dy * dy;
+    });
+
+    if (denominatorX === 0 || denominatorY === 0) {
+        return null;
+    }
+
+    return numerator / Math.sqrt(denominatorX * denominatorY);
+}
+
+function classifyCorrelation(r, sampleSize) {
+    if (sampleSize < 7 || r === null) {
+        return "insufficient";
+    }
+
+    const abs = Math.abs(r);
+
+    if (abs >= 0.7) {
+        return "strong";
+    }
+
+    if (abs >= 0.5) {
+        return "middle";
+    }
+
+    if (abs >= 0.3) {
+        return "weak";
+    }
+
+    return "none";
+}
+
+function getCorrelationLevelLabel(level) {
+    if (level === "strong") {
+        return "強い相関";
+    }
+
+    if (level === "middle") {
+        return "中程度";
+    }
+
+    if (level === "weak") {
+        return "弱い相関";
+    }
+
+    if (level === "insufficient") {
+        return "データ不足";
+    }
+
+    return "目立つ相関なし";
+}
+
+function getCorrelationClass(level) {
+    if (level === "strong") {
+        return "strong";
+    }
+
+    if (level === "middle") {
+        return "middle";
+    }
+
+    if (level === "weak") {
+        return "weak";
+    }
+
+    if (level === "insufficient") {
+        return "insufficient";
+    }
+
+    return "weak";
+}
+
+function interpretCorrelation(config, r) {
+    if (r === null) {
+        return "片方または両方の値が一定で、相関を計算できません。";
+    }
+
+    const direction = r >= 0 ? "正" : "負";
+
+    if (config.customMessage) {
+        return config.customMessage(direction, r);
+    }
+
+    if (r >= 0) {
+        return `${config.xLabel}が高い日は、${config.yLabel}も高くなる傾向があります。`;
+    }
+
+    return `${config.xLabel}が高い日は、${config.yLabel}が低くなる傾向があります。`;
+}
+
+function reliabilityText(sampleSize) {
+    if (sampleSize < 7) {
+        return "有効データが7件未満のため、判定しません。";
+    }
+
+    if (sampleSize < 14) {
+        return "有効データが少ないため、参考値です。";
+    }
+
+    if (sampleSize < 30) {
+        return "ある程度の傾向として確認できます。";
+    }
+
+    return "比較的安定した傾向として確認できます。";
+}
+
+function getCorrelationConfigs() {
+    return [
+        {
+            xKey: "sleepHours",
+            yKey: "focus",
+            xLabel: "睡眠時間",
+            yLabel: "集中力",
+            title: "睡眠時間 × 集中力",
+            lagDays: 0
+        },
+        {
+            xKey: "sleepHours",
+            yKey: "sleepiness",
+            xLabel: "睡眠時間",
+            yLabel: "眠気",
+            title: "睡眠時間 × 眠気",
+            lagDays: 0
+        },
+        {
+            xKey: "sleepHours",
+            yKey: "fatigue",
+            xLabel: "睡眠時間",
+            yLabel: "疲労",
+            title: "睡眠時間 × 疲労",
+            lagDays: 0
+        },
+        {
+            xKey: "sleepEfficiency",
+            yKey: "focus",
+            xLabel: "睡眠効率",
+            yLabel: "集中力",
+            title: "睡眠効率 × 集中力",
+            lagDays: 0
+        },
+        {
+            xKey: "focus",
+            yKey: "studyTotal",
+            xLabel: "集中力",
+            yLabel: "勉強時間",
+            title: "集中力 × 勉強時間",
+            lagDays: 0
+        },
+        {
+            xKey: "fatigue",
+            yKey: "studyTotal",
+            xLabel: "疲労",
+            yLabel: "勉強時間",
+            title: "疲労 × 勉強時間",
+            lagDays: 0
+        },
+        {
+            xKey: "sleepiness",
+            yKey: "studyTotal",
+            xLabel: "眠気",
+            yLabel: "勉強時間",
+            title: "眠気 × 勉強時間",
+            lagDays: 0
+        },
+        {
+            xKey: "bedtimeGap",
+            yKey: "studyTotal",
+            xLabel: "就寝ズレ",
+            yLabel: "勉強時間",
+            title: "就寝ズレ × 勉強時間",
+            lagDays: 0
+        },
+        {
+            xKey: "wakeTimeGap",
+            yKey: "studyTotal",
+            xLabel: "起床ズレ",
+            yLabel: "勉強時間",
+            title: "起床ズレ × 勉強時間",
+            lagDays: 0
+        },
+        {
+            xKey: "sleepHours",
+            yKey: "focus",
+            xLabel: "前日の睡眠時間",
+            yLabel: "翌日の集中力",
+            title: "前日睡眠 × 翌日集中力",
+            lagDays: 1,
+            customMessage: function (direction) {
+                if (direction === "正") {
+                    return "前日の睡眠時間が長いほど、翌日の集中力が高くなる傾向があります。";
+                }
+
+                return "前日の睡眠時間が長いほど、翌日の集中力が低い傾向があります。ただし疲労による寝すぎの影響も疑うべきです。";
+            }
+        },
+        {
+            xKey: "fatigue",
+            yKey: "studyTotal",
+            xLabel: "前日の疲労",
+            yLabel: "翌日の勉強時間",
+            title: "前日疲労 × 翌日勉強時間",
+            lagDays: 1,
+            customMessage: function (direction) {
+                if (direction === "正") {
+                    return "前日の疲労が高いほど、翌日の勉強時間も長い傾向があります。無理をしている可能性も確認してください。";
+                }
+
+                return "前日の疲労が高いほど、翌日の勉強時間が短くなる傾向があります。回復不足が勉強量に影響している可能性があります。";
+            }
+        },
+        {
+            xKey: "nightShift",
+            yKey: "sleepHours",
+            xLabel: "夜勤",
+            yLabel: "睡眠時間",
+            title: "夜勤 × 睡眠時間",
+            lagDays: 0,
+            customMessage: function (direction) {
+                if (direction === "正") {
+                    return "夜勤の日ほど睡眠時間が長い傾向があります。夜勤後に睡眠を確保できている可能性があります。";
+                }
+
+                return "夜勤の日ほど睡眠時間が短い傾向があります。夜勤後の回復不足を確認してください。";
+            }
+        },
+        {
+            xKey: "nightShift",
+            yKey: "fatigue",
+            xLabel: "夜勤",
+            yLabel: "疲労",
+            title: "夜勤 × 疲労",
+            lagDays: 0,
+            customMessage: function (direction) {
+                if (direction === "正") {
+                    return "夜勤の日ほど疲労が高い傾向があります。夜勤後の回復計画を重視してください。";
+                }
+
+                return "夜勤の日ほど疲労が低い傾向があります。現状では夜勤適応が比較的できている可能性があります。";
+            }
+        }
+    ];
+}
+
+function calculateCorrelationResults() {
+    const records = getRecords();
+    const dates = getCorrelationDates();
+    const configs = getCorrelationConfigs();
+
+    return configs.map(config => {
+        const pairs = buildCorrelationPairs(records, dates, config.xKey, config.yKey, config.lagDays);
+        const r = calculatePearsonCorrelation(pairs);
+        const level = classifyCorrelation(r, pairs.length);
+
+        return {
+            ...config,
+            pairs,
+            r,
+            level,
+            sampleSize: pairs.length,
+            absR: r === null ? 0 : Math.abs(r)
+        };
+    });
+}
+
+function renderCorrelationItem(result) {
+    const item = document.createElement("div");
+    const itemClass = getCorrelationClass(result.level);
+    item.className = `correlation-item ${itemClass}`;
+
+    const levelLabel = getCorrelationLevelLabel(result.level);
+    const rText = result.r === null ? "r = 未計算" : `r = ${result.r >= 0 ? "+" : ""}${result.r.toFixed(2)}`;
+    const message = result.level === "insufficient"
+        ? "有効データが不足しています。両方の項目が入力されている日を増やしてください。"
+        : interpretCorrelation(result, result.r);
+
+    const lagText = result.lagDays === 1 ? "前日→翌日" : "当日同士";
+
+    item.innerHTML = `
+        <span class="correlation-level ${itemClass}">${levelLabel}</span>
+        <span class="correlation-r">${rText}</span>
+        <p class="correlation-title">${result.title}</p>
+        <p class="correlation-message">${message}</p>
+        <p class="correlation-note-text">有効データ：${result.sampleSize}件 / 分析：${lagText}</p>
+        <p class="correlation-warning">${reliabilityText(result.sampleSize)} 相関は原因を証明するものではありません。</p>
+    `;
+
+    return item;
+}
+
+function updateCorrelationAnalysis() {
+    const list = document.getElementById("correlationList");
+    const validCountElement = document.getElementById("correlationValidCount");
+    const topStrengthElement = document.getElementById("correlationTopStrength");
+
+    if (!list) {
+        return;
+    }
+
+    const results = calculateCorrelationResults();
+
+    const displayResults = results
+        .filter(result => result.level !== "none")
+        .sort((a, b) => {
+            if (a.level === "insufficient" && b.level !== "insufficient") {
+                return 1;
+            }
+
+            if (a.level !== "insufficient" && b.level === "insufficient") {
+                return -1;
+            }
+
+            return b.absR - a.absR;
+        })
+        .slice(0, 8);
+
+    const validResults = results.filter(result => result.level !== "none" && result.level !== "insufficient");
+    const top = validResults.slice().sort((a, b) => b.absR - a.absR)[0];
+
+    if (validCountElement) {
+        validCountElement.textContent = `${validResults.length}件`;
+    }
+
+    if (topStrengthElement) {
+        if (top) {
+            topStrengthElement.textContent = `${top.r >= 0 ? "+" : ""}${top.r.toFixed(2)}`;
+            topStrengthElement.className = top.absR >= 0.7
+                ? "summary-value good"
+                : top.absR >= 0.5
+                    ? "summary-value warning"
+                    : "summary-value";
+        } else {
+            topStrengthElement.textContent = "未計算";
+            topStrengthElement.className = "summary-value";
+        }
+    }
+
+    list.innerHTML = "";
+
+    if (displayResults.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "目立つ相関はまだ見つかっていません。記録が増えると分析精度が上がります。";
+        list.appendChild(empty);
+        return;
+    }
+
+    displayResults.forEach(result => {
+        list.appendChild(renderCorrelationItem(result));
+    });
+}
+
+function setupCorrelationEvents() {
+    const select = document.getElementById("correlationRange");
+
+    if (select) {
+        select.addEventListener("change", updateCorrelationAnalysis);
+    }
 }
 
 // ==============================
@@ -1361,6 +2211,42 @@ function buildRecentDailyLines(records) {
     ].join("\n");
 }
 
+function buildAutoAlertsText() {
+    const alerts = detectAutoAlerts();
+
+    return [
+        "【自動検知】",
+        ...alerts.map(alert => {
+            const level = alert.level === "high" ? "警戒" : alert.level === "medium" ? "注意" : "良好";
+            return `・${level}：${alert.title}\n  ${alert.message}\n  対応：${alert.action}`;
+        })
+    ].join("\n");
+}
+
+function buildCorrelationSummaryText() {
+    const results = calculateCorrelationResults()
+        .filter(result => result.level !== "none" && result.level !== "insufficient")
+        .sort((a, b) => b.absR - a.absR)
+        .slice(0, 5);
+
+    if (results.length === 0) {
+        return [
+            "【相関分析】",
+            "有効な相関はまだ見つかっていません。記録が増えると分析精度が上がります。"
+        ].join("\n");
+    }
+
+    return [
+        "【相関分析】",
+        ...results.map(result => {
+            const level = getCorrelationLevelLabel(result.level);
+            const rText = result.r === null ? "未計算" : `${result.r >= 0 ? "+" : ""}${result.r.toFixed(2)}`;
+            return `・${level}：${result.title}（r=${rText}, 有効データ${result.sampleSize}件）\n  ${interpretCorrelation(result, result.r)}`;
+        }),
+        "※ 相関は原因を証明するものではなく、確認候補です。"
+    ].join("\n");
+}
+
 function buildCurrentDayText(date, record) {
     const efficiency = calculateSleepEfficiencyFromRecord(record);
     const achievement = calculateAchievementFromRecord(record);
@@ -1456,6 +2342,8 @@ function buildTodayConsultText(date, record, records) {
         "",
         buildCurrentDayText(date, record),
         "",
+        buildAutoAlertsText(),
+        "",
         buildWeeklySummaryText(records),
         "",
         buildRecentDailyLines(records),
@@ -1475,9 +2363,13 @@ function buildThirtyDayConsultText(date, record, records) {
         "",
         buildCurrentDayText(date, record),
         "",
+        buildAutoAlertsText(),
+        "",
         buildWeeklySummaryText(records),
         "",
         buildThirtyDaySummaryText(records),
+        "",
+        buildCorrelationSummaryText(),
         "",
         buildRecentDailyLines(records),
         "",
@@ -1496,9 +2388,13 @@ function buildLongConsultText(date, record, records) {
         "",
         buildCurrentDayText(date, record),
         "",
+        buildAutoAlertsText(),
+        "",
         buildThirtyDaySummaryText(records),
         "",
         buildMonthlySummaryText(records),
+        "",
+        buildCorrelationSummaryText(),
         "",
         "【相談したいこと】",
         "1. 月別に見て、睡眠・勉強・夜勤適応は改善しているか、悪化しているか。",
@@ -1516,11 +2412,15 @@ function buildExamConsultText(date, record, records) {
         "",
         buildCurrentDayText(date, record),
         "",
+        buildAutoAlertsText(),
+        "",
         buildWeeklySummaryText(records),
         "",
         buildThirtyDaySummaryText(records),
         "",
         buildSubjectSummaryText(records, 30),
+        "",
+        buildCorrelationSummaryText(),
         "",
         buildMonthlySummaryText(records),
         "",
@@ -1580,9 +2480,7 @@ function generateAiConsultText() {
     const record = records[date] || getFormData();
     const consultType = getSelectedConsultType();
 
-    const text = buildAiConsultTextByType(consultType, date, record, records);
-
-    textarea.value = text;
+    textarea.value = buildAiConsultTextByType(consultType, date, record, records);
 
     if (copyStatus) {
         copyStatus.textContent = `作成しました：${getConsultTypeLabel(consultType)}`;
@@ -1865,6 +2763,7 @@ function drawLineChart(config) {
 
     for (let i = 0; i <= 4; i++) {
         const y = padding.top + chartHeight * i / 4;
+
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
         ctx.lineTo(padding.left + chartWidth, y);
@@ -2040,7 +2939,7 @@ function updateCharts() {
 
     drawLineChart({
         canvasId: "sleepChart",
-        labels: labels,
+        labels,
         minValue: 0,
         maxValue: 12,
         valueDecimals: 1,
@@ -2057,7 +2956,7 @@ function updateCharts() {
 
     drawLineChart({
         canvasId: "studyChart",
-        labels: labels,
+        labels,
         minValue: 0,
         valueDecimals: 0,
         includeZero: true,
@@ -2073,7 +2972,7 @@ function updateCharts() {
 
     drawLineChart({
         canvasId: "conditionChart",
-        labels: labels,
+        labels,
         minValue: 0,
         maxValue: 10,
         valueDecimals: 0,
@@ -2110,7 +3009,7 @@ function updateCharts() {
 
     drawLineChart({
         canvasId: "gapChart",
-        labels: labels,
+        labels,
         valueDecimals: 0,
         includeZero: true,
         datasets: [
@@ -2228,15 +3127,6 @@ function updateAchievementSummary() {
     }
 }
 
-function averageNumber(values) {
-    if (values.length === 0) {
-        return null;
-    }
-
-    const total = values.reduce((sum, value) => sum + value, 0);
-    return total / values.length;
-}
-
 function setGapSummary(id, value) {
     const element = document.getElementById(id);
 
@@ -2253,33 +3143,6 @@ function setGapSummary(id, value) {
 
     element.textContent = formatGapMinutes(value);
     setSummaryClass(element, value, "gap");
-}
-
-function averageText(values, unit) {
-    if (values.length === 0) {
-        return "未計算";
-    }
-
-    const total = values.reduce((sum, value) => sum + value, 0);
-    const average = total / values.length;
-
-    if (unit === "%") {
-        return `${average.toFixed(1)}%`;
-    }
-
-    if (unit === "時間") {
-        return `${average.toFixed(1)}時間`;
-    }
-
-    return average.toFixed(1);
-}
-
-function setText(id, text) {
-    const element = document.getElementById(id);
-
-    if (element) {
-        element.textContent = text;
-    }
 }
 
 // ==============================
@@ -2670,12 +3533,7 @@ function deleteCurrentRecord() {
 
     updateAllCalculatedDisplays();
     updateSaveStatus(`削除しました：${date}`, false);
-    renderHistory();
-    renderRecordCalendar();
-    updateWeeklySummary();
-    updateAchievementSummary();
-    updateDeleteButton();
-    updateCharts();
+    updateAfterDataChange();
 
     console.log("削除しました", date);
 }
@@ -2686,10 +3544,10 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "4.1",
+        version: "4.3",
         exportedAt: new Date().toISOString(),
-        settings: settings,
-        records: records
+        settings,
+        records
     };
 
     const jsonText = JSON.stringify(backupData, null, 2);
@@ -2792,7 +3650,6 @@ function importDataFromFile(file) {
             loadRecord(nextDate);
 
             updateSaveStatus(`復元しました：${count}件`, false);
-            updateCharts();
             window.alert("復元が完了しました。");
         } catch (error) {
             console.error(error);
@@ -2819,7 +3676,6 @@ function setupBackupEvents() {
         importFile.addEventListener("change", event => {
             const file = event.target.files[0];
             importDataFromFile(file);
-
             event.target.value = "";
         });
     }
@@ -2912,6 +3768,7 @@ window.addEventListener("load", () => {
     setupSettingsEvents();
     setupAiTextEvents();
     setupChartEvents();
+    setupCorrelationEvents();
 
     updateRatingDisplays();
     updateTodayAdvice();
@@ -2921,6 +3778,8 @@ window.addEventListener("load", () => {
     updateAchievementSummary();
     updateSettingsStatus();
     updateCharts();
+    updateAutoAlerts();
+    updateCorrelationAnalysis();
 
     console.log("初期化完了");
 });
