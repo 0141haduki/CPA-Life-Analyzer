@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v2</title>
+    <title>CPA Life Analyzer v2.1</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -33,11 +33,27 @@
             <label for="wakeTime">起床時刻</label>
             <input type="time" id="wakeTime">
 
-            <label for="sleepHours">睡眠時間（時間）</label>
-            <input type="number" id="sleepHours" step="0.1" placeholder="例：7.5">
+            <label for="sleepHours">実睡眠時間（時間）</label>
+            <input type="number" id="sleepHours" step="0.1" min="0" placeholder="例：6.5">
 
             <label for="awakeCount">覚醒回数</label>
             <input type="number" id="awakeCount" min="0" placeholder="例：2">
+
+            <div class="sleep-summary">
+                <div class="summary-box">
+                    <span class="summary-label">在床時間</span>
+                    <span id="timeInBed" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">睡眠効率</span>
+                    <span id="sleepEfficiency" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <p class="hint">
+                ※ 在床時間は「就寝時刻〜起床時刻」から自動計算します。実睡眠時間はスマートウォッチ等の数値を入力してください。
+            </p>
         </section>
 
         <section class="card">
@@ -97,7 +113,7 @@
             <h2>📝 メモ</h2>
 
             <label for="memo">今日のメモ</label>
-            <textarea id="memo" rows="5" placeholder="例：夜に眠気が強かった。木更津応援。企業法を少し進めた。"></textarea>
+            <textarea id="memo" rows="5" placeholder="例：夜に眠気が強かった。企業法を少し進めた。"></textarea>
         </section>
 
         <section class="card status-card">
@@ -115,7 +131,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v2</p>
+        <p>CPA Life Analyzer v2.1</p>
     </footer>
 
     <script src="script.js"></script>

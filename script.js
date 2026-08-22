@@ -1,6 +1,6 @@
-// CPA Life Analyzer v2
+// CPA Life Analyzer v2.1
 
-console.log("CPA Life Analyzer v2 起動");
+console.log("CPA Life Analyzer v2.1 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
@@ -79,6 +79,8 @@ function setFormData(data) {
             element.value = data[id] ?? "";
         }
     });
+
+    updateSleepSummary();
 }
 
 // 入力欄を空にする
@@ -90,6 +92,8 @@ function clearForm() {
             element.value = "";
         }
     });
+
+    updateSleepSummary();
 }
 
 // 現在の日付のデータを保存
@@ -110,6 +114,7 @@ function saveCurrentRecord() {
 
     currentDate = date;
 
+    updateSleepSummary();
     updateSaveStatus(`保存しました：${date}`);
     renderHistory();
 
@@ -132,6 +137,7 @@ function loadRecord(date) {
     localStorage.setItem(LAST_DATE_KEY, date);
     currentDate = date;
 
+    updateSleepSummary();
     renderHistory();
 }
 
@@ -141,6 +147,90 @@ function updateSaveStatus(message) {
 
     if (status) {
         status.textContent = message;
+    }
+}
+
+// 時刻から分に変換
+function timeToMinutes(timeText) {
+    if (!timeText) {
+        return null;
+    }
+
+    const parts = timeText.split(":");
+
+    if (parts.length !== 2) {
+        return null;
+    }
+
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        return null;
+    }
+
+    return hours * 60 + minutes;
+}
+
+// 在床時間を計算
+function calculateTimeInBedHours(bedtime, wakeTime) {
+    const bedMinutes = timeToMinutes(bedtime);
+    const wakeMinutes = timeToMinutes(wakeTime);
+
+    if (bedMinutes === null || wakeMinutes === null) {
+        return null;
+    }
+
+    let diffMinutes = wakeMinutes - bedMinutes;
+
+    // 起床時刻が就寝時刻より早い場合は、日付をまたいだ睡眠として扱う
+    if (diffMinutes <= 0) {
+        diffMinutes += 24 * 60;
+    }
+
+    return diffMinutes / 60;
+}
+
+// 睡眠サマリーを更新
+function updateSleepSummary() {
+    const bedtime = document.getElementById("bedtime")?.value;
+    const wakeTime = document.getElementById("wakeTime")?.value;
+    const sleepHoursText = document.getElementById("sleepHours")?.value;
+
+    const timeInBedElement = document.getElementById("timeInBed");
+    const efficiencyElement = document.getElementById("sleepEfficiency");
+
+    const timeInBedHours = calculateTimeInBedHours(bedtime, wakeTime);
+
+    if (timeInBedElement) {
+        if (timeInBedHours === null) {
+            timeInBedElement.textContent = "未計算";
+        } else {
+            timeInBedElement.textContent = `${timeInBedHours.toFixed(1)}時間`;
+        }
+    }
+
+    if (efficiencyElement) {
+        const sleepHours = Number(sleepHoursText);
+
+        if (
+            timeInBedHours === null ||
+            !sleepHoursText ||
+            Number.isNaN(sleepHours) ||
+            sleepHours <= 0 ||
+            timeInBedHours <= 0
+        ) {
+            efficiencyElement.textContent = "未計算";
+            return;
+        }
+
+        const efficiency = sleepHours / timeInBedHours * 100;
+
+        if (efficiency > 100) {
+            efficiencyElement.textContent = `${efficiency.toFixed(1)}% 要確認`;
+        } else {
+            efficiencyElement.textContent = `${efficiency.toFixed(1)}%`;
+        }
     }
 }
 
@@ -176,8 +266,8 @@ function renderHistory() {
         const record = records[date];
 
         const sleepText = record.sleepHours
-            ? `睡眠 ${record.sleepHours}時間`
-            : "睡眠 未入力";
+            ? `実睡眠 ${record.sleepHours}時間`
+            : "実睡眠 未入力";
 
         const studyText = record.studyTotal
             ? `勉強 ${record.studyTotal}分`
@@ -187,7 +277,11 @@ function renderHistory() {
 
         button.addEventListener("click", () => {
             const dateElement = document.getElementById("recordDate");
-            dateElement.value = date;
+
+            if (dateElement) {
+                dateElement.value = date;
+            }
+
             loadRecord(date);
         });
 

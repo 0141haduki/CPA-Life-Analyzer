@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v2 */
+/* CPA Life Analyzer v2.1 */
 
 * {
     box-sizing: border-box;
@@ -83,6 +83,41 @@ textarea {
     resize: vertical;
 }
 
+/* 睡眠サマリー */
+.sleep-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.summary-box {
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.summary-label {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.hint {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
 .status-card {
     border-left: 5px solid #2563eb;
 }
@@ -147,5 +182,9 @@ textarea {
     select,
     textarea {
         font-size: 16px;
+    }
+
+    .sleep-summary {
+        grid-template-columns: 1fr;
     }
 }
