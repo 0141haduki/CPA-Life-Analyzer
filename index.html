@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v3.4</title>
+    <title>CPA Life Analyzer v3.5</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -44,8 +44,44 @@
             <h2>🤖 AI相談用テキスト</h2>
 
             <p class="hint">
-                現在の日付、直近7日、直近30日、月別要約から、ChatGPTに貼り付ける相談文を作成します。
+                相談目的を選ぶと、ChatGPTに貼り付ける文章の内容を切り替えます。
             </p>
+
+            <div class="consult-type-box">
+                <p class="consult-type-title">相談タイプ</p>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="today" checked>
+                    <span>
+                        <strong>今日の行動相談</strong>
+                        <small>今日の勉強量・勤務前後の動き方を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="thirty">
+                    <span>
+                        <strong>直近30日の生活改善相談</strong>
+                        <small>睡眠・疲労・勉強継続の傾向を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="long">
+                    <span>
+                        <strong>長期傾向分析</strong>
+                        <small>月別要約から半年〜1年単位の改善点を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="exam">
+                    <span>
+                        <strong>試験勉強計画相談</strong>
+                        <small>公認会計士試験に向けた勉強配分を相談する</small>
+                    </span>
+                </label>
+            </div>
 
             <button id="generateAiTextButton" class="primary-button">
                 AI相談用テキストを作成
@@ -365,7 +401,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v3.4</p>
+        <p>CPA Life Analyzer v3.5</p>
     </footer>
 
     <script src="script.js"></script>

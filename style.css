@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v3.4 */
+/* CPA Life Analyzer v3.5 */
 
 * {
     box-sizing: border-box;
@@ -135,6 +135,62 @@ textarea {
 .ai-text-card {
     border-left: 5px solid #6366f1;
     background: #eef2ff;
+}
+
+.consult-type-box {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    background: white;
+}
+
+.consult-type-title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #3730a3;
+}
+
+.consult-type-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 12px;
+    border: 1px solid #e0e7ff;
+    border-radius: 12px;
+    background: #f8fafc;
+    cursor: pointer;
+}
+
+.consult-type-option:hover {
+    background: #eef2ff;
+    border-color: #818cf8;
+}
+
+.consult-type-option input {
+    width: auto;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.consult-type-option span {
+    display: block;
+}
+
+.consult-type-option strong {
+    display: block;
+    font-size: 15px;
+    color: #1e1b4b;
+}
+
+.consult-type-option small {
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
 }
 
 #aiConsultText {

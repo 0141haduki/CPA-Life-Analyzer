@@ -1,6 +1,6 @@
-// CPA Life Analyzer v3.4
+// CPA Life Analyzer v3.5
 
-console.log("CPA Life Analyzer v3.4 起動");
+console.log("CPA Life Analyzer v3.5 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -1079,6 +1079,11 @@ function isNightShift(workType) {
     return workType === "21-6" || workType === "21-8" || workType === "21-9";
 }
 
+function getSelectedConsultType() {
+    const selected = document.querySelector('input[name="consultType"]:checked');
+    return selected ? selected.value : "today";
+}
+
 function buildPeriodStats(records, dates) {
     const sleepValues = [];
     const efficiencyValues = [];
@@ -1096,6 +1101,8 @@ function buildPeriodStats(records, dates) {
     let nightShiftDays = 0;
     let achievementTargetCount = 0;
     let achievedCount = 0;
+
+    const subjectStudyTotals = {};
 
     dates.forEach(date => {
         const record = records[date];
@@ -1148,6 +1155,9 @@ function buildPeriodStats(records, dates) {
             if (study > 0) {
                 studyDays += 1;
             }
+
+            const subject = record.mainSubject || "未選択";
+            subjectStudyTotals[subject] = (subjectStudyTotals[subject] || 0) + study;
         }
 
         if (isNightShift(record.workType)) {
@@ -1195,7 +1205,8 @@ function buildPeriodStats(records, dates) {
         nightShiftDays,
         achievementTargetCount,
         achievedCount,
-        achievementRate
+        achievementRate,
+        subjectStudyTotals
     };
 }
 
@@ -1219,7 +1230,7 @@ function buildPeriodSummaryText(title, dates, stats) {
         `平均集中力：${averageText(stats.focusValues, "")}`,
         `平均疲労：${averageText(stats.fatigueValues, "")}`,
         `平均眠気：${averageText(stats.sleepinessValues, "")}`,
-        `合計勉強時間：${stats.studyTotal}分`,
+        `合計勉強時間：${stats.studyTotal}分（${(stats.studyTotal / 60).toFixed(1)}時間）`,
         `勉強した日数：${stats.studyDays}日`,
         `夜勤回数：${stats.nightShiftDays}回`,
         `平均就寝ズレ：${formatGapMinutes(averageNumber(stats.bedtimeGaps))}`,
@@ -1279,6 +1290,29 @@ function buildMonthlySummaryText(records) {
         lines.push(
             `${monthKey}：記録${stats.recordDays}日、平均睡眠${averageText(stats.sleepValues, "時間")}、勉強${studyHoursText}、勉強日${stats.studyDays}日、夜勤${stats.nightShiftDays}回、平均集中${averageText(stats.focusValues, "")}、予定達成率${achievementText}`
         );
+    });
+
+    return lines.join("\n");
+}
+
+function buildSubjectSummaryText(records, days) {
+    const dates = getRecentDates(days);
+    const stats = buildPeriodStats(records, dates);
+    const entries = Object.entries(stats.subjectStudyTotals)
+        .filter(([, minutes]) => minutes > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+    if (entries.length === 0) {
+        return [
+            `【直近${days}日の科目別勉強時間】`,
+            "勉強時間の記録がありません。"
+        ].join("\n");
+    }
+
+    const lines = [`【直近${days}日の科目別勉強時間】`];
+
+    entries.forEach(([subject, minutes]) => {
+        lines.push(`${subject}：${minutes}分（${(minutes / 60).toFixed(1)}時間）`);
     });
 
     return lines.join("\n");
@@ -1404,6 +1438,129 @@ function buildCurrentDayText(date, record) {
     ].join("\n");
 }
 
+function buildCommonOpening() {
+    return [
+        "以下は、私の生活記録アプリから出力したデータです。",
+        "公認会計士試験の勉強、夜勤を含む勤務、睡眠リズムの安定を両立したいです。",
+        "極端な根性論ではなく、現実的に継続できる提案をしてください。"
+    ].join("\n");
+}
+
+function buildTodayConsultText(date, record, records) {
+    return [
+        buildCommonOpening(),
+        "このデータをもとに、今日の過ごし方、勉強負荷、勤務前後の動き方、翌日の注意点を具体的に助言してください。",
+        "",
+        buildCurrentDayText(date, record),
+        "",
+        buildWeeklySummaryText(records),
+        "",
+        buildRecentDailyLines(records),
+        "",
+        "【相談したいこと】",
+        "1. 今日の勉強量は増やすべきか、抑えるべきか。",
+        "2. 勤務前後に何を優先すべきか。",
+        "3. 疲労・眠気・集中力から見て、今日の最適行動は何か。",
+        "4. 明日以降に崩れないための注意点は何か。"
+    ].join("\n");
+}
+
+function buildThirtyDayConsultText(date, record, records) {
+    return [
+        buildCommonOpening(),
+        "直近30日の傾向をもとに、睡眠・疲労・勉強継続・夜勤適応の改善点を分析してください。",
+        "",
+        buildCurrentDayText(date, record),
+        "",
+        buildWeeklySummaryText(records),
+        "",
+        buildThirtyDaySummaryText(records),
+        "",
+        buildRecentDailyLines(records),
+        "",
+        "【相談したいこと】",
+        "1. 直近30日の生活リズムの問題点は何か。",
+        "2. 睡眠不足・寝すぎ・予定未達のどれを優先的に直すべきか。",
+        "3. 勉強時間を増やすには、どの時間帯に固定すべきか。",
+        "4. 夜勤がある中で、現実的な改善策は何か。"
+    ].join("\n");
+}
+
+function buildLongConsultText(date, record, records) {
+    return [
+        buildCommonOpening(),
+        "月別要約から、半年〜1年単位で見た長期傾向と改善方針を分析してください。",
+        "",
+        buildCurrentDayText(date, record),
+        "",
+        buildThirtyDaySummaryText(records),
+        "",
+        buildMonthlySummaryText(records),
+        "",
+        "【相談したいこと】",
+        "1. 月別に見て、睡眠・勉強・夜勤適応は改善しているか、悪化しているか。",
+        "2. 長期的に最も足を引っ張っている要因は何か。",
+        "3. 今後1か月で最優先に改善すべき行動は何か。",
+        "4. 無理なく継続するための月間目標をどう設定すべきか。"
+    ].join("\n");
+}
+
+function buildExamConsultText(date, record, records) {
+    return [
+        buildCommonOpening(),
+        "公認会計士試験の短答・論文を見据えて、生活データから現実的な勉強計画を立ててください。",
+        "特に、企業法・監査論への苦手意識、夜勤、睡眠リズムを考慮してください。",
+        "",
+        buildCurrentDayText(date, record),
+        "",
+        buildWeeklySummaryText(records),
+        "",
+        buildThirtyDaySummaryText(records),
+        "",
+        buildSubjectSummaryText(records, 30),
+        "",
+        buildMonthlySummaryText(records),
+        "",
+        "【相談したいこと】",
+        "1. 現在の生活リズムで、1日の現実的な勉強時間はどれくらいか。",
+        "2. 企業法・監査論を避けずに進めるには、どのように小さく始めるべきか。",
+        "3. 睡眠と夜勤を崩さずに勉強時間を増やす方法は何か。",
+        "4. 直近1か月の勉強計画を、現実的な最低ラインと標準ラインで提案してほしい。"
+    ].join("\n");
+}
+
+function buildAiConsultTextByType(type, date, record, records) {
+    if (type === "thirty") {
+        return buildThirtyDayConsultText(date, record, records);
+    }
+
+    if (type === "long") {
+        return buildLongConsultText(date, record, records);
+    }
+
+    if (type === "exam") {
+        return buildExamConsultText(date, record, records);
+    }
+
+    return buildTodayConsultText(date, record, records);
+}
+
+function getConsultTypeLabel(type) {
+    if (type === "thirty") {
+        return "直近30日の生活改善相談";
+    }
+
+    if (type === "long") {
+        return "長期傾向分析";
+    }
+
+    if (type === "exam") {
+        return "試験勉強計画相談";
+    }
+
+    return "今日の行動相談";
+}
+
 function generateAiConsultText() {
     saveCurrentRecord();
 
@@ -1418,36 +1575,14 @@ function generateAiConsultText() {
 
     const date = dateElement.value || getTodayString();
     const record = records[date] || getFormData();
+    const consultType = getSelectedConsultType();
 
-    const text = [
-        "以下は、私の生活記録アプリから出力したデータです。",
-        "公認会計士試験の勉強、夜勤を含む勤務、睡眠リズムの安定を両立したいです。",
-        "このデータをもとに、今日の過ごし方、勉強負荷、睡眠改善、翌日の注意点、長期的な改善方針を具体的に助言してください。",
-        "極端な根性論ではなく、現実的に継続できる提案をしてください。",
-        "",
-        buildCurrentDayText(date, record),
-        "",
-        buildWeeklySummaryText(records),
-        "",
-        buildThirtyDaySummaryText(records),
-        "",
-        buildMonthlySummaryText(records),
-        "",
-        buildRecentDailyLines(records),
-        "",
-        "【相談したいこと】",
-        "1. 今日の勉強量は増やすべきか、抑えるべきか。",
-        "2. 睡眠予定は現実的か。",
-        "3. 疲労・眠気・集中力から見て、優先すべき行動は何か。",
-        "4. 直近30日の傾向から見て、生活リズムの問題点は何か。",
-        "5. 月別要約から見て、長期的に改善すべき点は何か。",
-        "6. 明日以降に崩れないための具体策は何か。"
-    ].join("\n");
+    const text = buildAiConsultTextByType(consultType, date, record, records);
 
     textarea.value = text;
 
     if (copyStatus) {
-        copyStatus.textContent = "作成しました。必要ならコピーしてください。";
+        copyStatus.textContent = `作成しました：${getConsultTypeLabel(consultType)}`;
     }
 }
 
@@ -1499,6 +1634,9 @@ function fallbackCopyText(textarea, copyStatus) {
 function setupAiTextEvents() {
     const generateButton = document.getElementById("generateAiTextButton");
     const copyButton = document.getElementById("copyAiTextButton");
+    const consultTypeInputs = document.querySelectorAll('input[name="consultType"]');
+    const textarea = document.getElementById("aiConsultText");
+    const copyStatus = document.getElementById("copyStatus");
 
     if (generateButton) {
         generateButton.addEventListener("click", generateAiConsultText);
@@ -1507,6 +1645,18 @@ function setupAiTextEvents() {
     if (copyButton) {
         copyButton.addEventListener("click", copyAiConsultText);
     }
+
+    consultTypeInputs.forEach(input => {
+        input.addEventListener("change", () => {
+            if (textarea) {
+                textarea.value = "";
+            }
+
+            if (copyStatus) {
+                copyStatus.textContent = `相談タイプを変更しました：${getConsultTypeLabel(getSelectedConsultType())}`;
+            }
+        });
+    });
 }
 
 // ==============================
@@ -2035,7 +2185,7 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "3.4",
+        version: "3.5",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records
