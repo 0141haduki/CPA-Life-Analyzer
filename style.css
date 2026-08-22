@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v3.0 */
+/* CPA Life Analyzer v3.1 */
 
 * {
     box-sizing: border-box;
@@ -129,6 +129,39 @@ textarea {
 
 .advice-list li.priority-good {
     color: #15803d;
+}
+
+/* AI相談用テキスト */
+.ai-text-card {
+    border-left: 5px solid #6366f1;
+    background: #eef2ff;
+}
+
+#aiConsultText {
+    min-height: 260px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    background: white;
+}
+
+.secondary-button {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid #2563eb;
+    border-radius: 10px;
+    background: white;
+    color: #2563eb;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+}
+
+.secondary-button:hover {
+    background: #eff6ff;
 }
 
 /* 基本設定 */

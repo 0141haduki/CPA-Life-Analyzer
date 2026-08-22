@@ -1,6 +1,6 @@
-// CPA Life Analyzer v3.0
+// CPA Life Analyzer v3.1
 
-console.log("CPA Life Analyzer v3.0 起動");
+console.log("CPA Life Analyzer v3.1 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
@@ -27,31 +27,19 @@ const fieldIds = [
 
 // 体調評価ボタンの項目
 const ratingFields = [
-    {
-        id: "mood",
-        label: "気分"
-    },
-    {
-        id: "sleepiness",
-        label: "眠気"
-    },
-    {
-        id: "fatigue",
-        label: "疲労"
-    },
-    {
-        id: "focus",
-        label: "集中力"
-    }
+    { id: "mood", label: "気分" },
+    { id: "sleepiness", label: "眠気" },
+    { id: "fatigue", label: "疲労" },
+    { id: "focus", label: "集中力" }
 ];
 
-// 現在選択中の日付
 let currentDate = "";
-
-// 履歴表示フィルター
 let historyFilter = "7";
 
-// 今日の日付を YYYY-MM-DD 形式で取得
+// ==============================
+// 日付・時刻
+// ==============================
+
 function getTodayString() {
     const today = new Date();
     const year = today.getFullYear();
@@ -60,7 +48,6 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-// 現在時刻を HH:MM 形式で取得
 function getCurrentTimeString() {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, "0");
@@ -68,7 +55,6 @@ function getCurrentTimeString() {
     return `${hours}:${minutes}`;
 }
 
-// YYYY-MM-DD を Date に変換
 function dateStringToDate(dateText) {
     const parts = dateText.split("-").map(Number);
 
@@ -76,9 +62,7 @@ function dateStringToDate(dateText) {
         return null;
     }
 
-    const year = parts[0];
-    const month = parts[1];
-    const day = parts[2];
+    const [year, month, day] = parts;
 
     if (!year || !month || !day) {
         return null;
@@ -87,7 +71,6 @@ function dateStringToDate(dateText) {
     return new Date(year, month - 1, day);
 }
 
-// Date を YYYY-MM-DD に変換
 function dateToString(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -95,7 +78,6 @@ function dateToString(date) {
     return `${year}-${month}-${day}`;
 }
 
-// 日付に日数を足す
 function addDays(dateText, days) {
     const date = dateStringToDate(dateText);
 
@@ -107,7 +89,6 @@ function addDays(dateText, days) {
     return dateToString(date);
 }
 
-// MM/DD 表示
 function formatShortDate(dateText) {
     const parts = dateText.split("-");
 
@@ -118,7 +99,6 @@ function formatShortDate(dateText) {
     return `${Number(parts[1])}/${Number(parts[2])}`;
 }
 
-// 日付差を計算
 function getDaysDiff(dateText) {
     const today = dateStringToDate(getTodayString());
     const target = dateStringToDate(dateText);
@@ -131,7 +111,10 @@ function getDaysDiff(dateText) {
     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
-// 全記録を取得
+// ==============================
+// 保存・設定
+// ==============================
+
 function getRecords() {
     const text = localStorage.getItem(STORAGE_KEY);
 
@@ -153,12 +136,10 @@ function getRecords() {
     }
 }
 
-// 全記録を保存
 function setRecords(records) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
 
-// 設定を取得
 function getSettings() {
     const text = localStorage.getItem(SETTINGS_KEY);
 
@@ -186,12 +167,10 @@ function getSettings() {
     }
 }
 
-// 設定を保存
 function setSettings(settings) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-// 設定欄に反映
 function loadSettingsToForm() {
     const settings = getSettings();
 
@@ -209,7 +188,6 @@ function loadSettingsToForm() {
     updateSettingsStatus();
 }
 
-// 基本睡眠予定を保存
 function saveSettingsFromForm() {
     const defaultBedtime = document.getElementById("defaultPlannedBedtime")?.value || "";
     const defaultWakeTime = document.getElementById("defaultPlannedWakeTime")?.value || "";
@@ -239,7 +217,6 @@ function saveSettingsFromForm() {
     window.alert("基本睡眠予定を保存しました。新しい日付ではこの予定が自動入力されます。");
 }
 
-// 設定保存状態を表示
 function updateSettingsStatus() {
     const status = document.getElementById("settingsStatus");
     const settings = getSettings();
@@ -255,7 +232,6 @@ function updateSettingsStatus() {
     }
 }
 
-// 基本予定を今日の予定欄へ反映
 function applyDefaultPlanToForm() {
     const settings = getSettings();
 
@@ -271,7 +247,10 @@ function applyDefaultPlanToForm() {
     }
 }
 
-// 画面の入力内容を取得
+// ==============================
+// フォーム
+// ==============================
+
 function getFormData() {
     const data = {};
 
@@ -286,7 +265,6 @@ function getFormData() {
     return data;
 }
 
-// 画面にデータを反映
 function setFormData(data) {
     const settings = getSettings();
 
@@ -318,7 +296,6 @@ function setFormData(data) {
     updateAllCalculatedDisplays();
 }
 
-// 入力欄を空にする
 function clearForm() {
     fieldIds.forEach(id => {
         const element = document.getElementById(id);
@@ -332,7 +309,6 @@ function clearForm() {
     updateAllCalculatedDisplays();
 }
 
-// 現在の日付のデータを保存
 function saveCurrentRecord() {
     const dateElement = document.getElementById("recordDate");
 
@@ -369,7 +345,6 @@ function saveCurrentRecord() {
     console.log("保存しました", date, records[date]);
 }
 
-// 指定した日付のデータを読み込む
 function loadRecord(date) {
     const records = getRecords();
 
@@ -396,7 +371,6 @@ function loadRecord(date) {
     updateDeleteButton();
 }
 
-// 保存状態を表示
 function updateSaveStatus(message, hasWarning) {
     const status = document.getElementById("saveStatus");
     const statusCard = document.querySelector(".status-card");
@@ -414,7 +388,10 @@ function updateSaveStatus(message, hasWarning) {
     }
 }
 
-// 時刻から分に変換
+// ==============================
+// 計算
+// ==============================
+
 function timeToMinutes(timeText) {
     if (!timeText) {
         return null;
@@ -436,7 +413,6 @@ function timeToMinutes(timeText) {
     return hours * 60 + minutes;
 }
 
-// 在床時間を計算
 function calculateTimeInBedHours(bedtime, wakeTime) {
     const bedMinutes = timeToMinutes(bedtime);
     const wakeMinutes = timeToMinutes(wakeTime);
@@ -447,7 +423,6 @@ function calculateTimeInBedHours(bedtime, wakeTime) {
 
     let diffMinutes = wakeMinutes - bedMinutes;
 
-    // 起床時刻が就寝時刻より早い場合は、日付をまたいだ睡眠として扱う
     if (diffMinutes <= 0) {
         diffMinutes += 24 * 60;
     }
@@ -455,7 +430,6 @@ function calculateTimeInBedHours(bedtime, wakeTime) {
     return diffMinutes / 60;
 }
 
-// 時刻のズレを分で計算
 function calculateClockGapMinutes(plannedTime, actualTime) {
     const plannedMinutes = timeToMinutes(plannedTime);
     const actualMinutes = timeToMinutes(actualTime);
@@ -466,7 +440,6 @@ function calculateClockGapMinutes(plannedTime, actualTime) {
 
     let diff = actualMinutes - plannedMinutes;
 
-    // 日付またぎを考慮して、-12時間〜+12時間の範囲に補正
     if (diff > 720) {
         diff -= 1440;
     }
@@ -478,7 +451,6 @@ function calculateClockGapMinutes(plannedTime, actualTime) {
     return diff;
 }
 
-// 分を表示用に変換
 function formatGapMinutes(minutes) {
     if (minutes === null) {
         return "未計算";
@@ -506,7 +478,6 @@ function formatGapMinutes(minutes) {
     return `${sign}${hours}時間${mins}分`;
 }
 
-// サマリー値に色をつける
 function setSummaryClass(element, value, type) {
     if (!element) {
         return;
@@ -551,7 +522,6 @@ function setSummaryClass(element, value, type) {
     }
 }
 
-// 記録データから睡眠効率を計算
 function calculateSleepEfficiencyFromRecord(record) {
     if (!record) {
         return null;
@@ -573,7 +543,6 @@ function calculateSleepEfficiencyFromRecord(record) {
     return sleepHours / timeInBedHours * 100;
 }
 
-// 記録データから予定達成情報を計算
 function calculateAchievementFromRecord(record) {
     if (!record) {
         return null;
@@ -606,13 +575,11 @@ function calculateAchievementFromRecord(record) {
     };
 }
 
-// 現在画面の睡眠効率を計算
 function calculateSleepEfficiency() {
     const record = getFormData();
     return calculateSleepEfficiencyFromRecord(record);
 }
 
-// 睡眠サマリーを更新
 function updateSleepSummary() {
     const plannedBedtime = document.getElementById("plannedBedtime")?.value;
     const plannedWakeTime = document.getElementById("plannedWakeTime")?.value;
@@ -682,7 +649,24 @@ function updateSleepSummary() {
     }
 }
 
-// 数値入力の範囲チェック
+function getNumberOrNull(valueText) {
+    if (valueText === "" || valueText === undefined || valueText === null) {
+        return null;
+    }
+
+    const value = Number(valueText);
+
+    if (Number.isNaN(value)) {
+        return null;
+    }
+
+    return value;
+}
+
+// ==============================
+// 入力チェック
+// ==============================
+
 function checkRange(valueText, label, min, max) {
     const warnings = [];
 
@@ -704,7 +688,6 @@ function checkRange(valueText, label, min, max) {
     return warnings;
 }
 
-// 現在の入力内容をチェック
 function validateCurrentRecord() {
     const warnings = [];
 
@@ -784,7 +767,6 @@ function validateCurrentRecord() {
     return warnings;
 }
 
-// 入力チェック欄を更新
 function updateWarnings() {
     const warningList = document.getElementById("warningList");
     const warningCard = document.getElementById("warningCard");
@@ -821,22 +803,10 @@ function updateWarnings() {
     });
 }
 
-// 数値として使えるか確認
-function getNumberOrNull(valueText) {
-    if (valueText === "" || valueText === undefined || valueText === null) {
-        return null;
-    }
+// ==============================
+// 今日のアドバイス
+// ==============================
 
-    const value = Number(valueText);
-
-    if (Number.isNaN(value)) {
-        return null;
-    }
-
-    return value;
-}
-
-// 今日のアドバイスを更新
 function updateTodayAdvice() {
     const main = document.getElementById("todayAdviceMain");
     const list = document.getElementById("todayAdviceList");
@@ -880,7 +850,6 @@ function updateTodayAdvice() {
         return;
     }
 
-    // 睡眠時間による判断
     if (sleepHours !== null) {
         if (sleepHours < 5) {
             mainText = "今日は回復優先です。重い勉強や判断量の多い作業は抑えた方が安全です。";
@@ -907,7 +876,6 @@ function updateTodayAdvice() {
         });
     }
 
-    // 睡眠効率による判断
     if (efficiency !== null) {
         if (efficiency > 100) {
             adviceItems.push({
@@ -927,7 +895,6 @@ function updateTodayAdvice() {
         }
     }
 
-    // 予定ズレによる判断
     if (achievement && achievement.canJudgeAchievement) {
         if (achievement.achieved) {
             adviceItems.push({
@@ -951,7 +918,6 @@ function updateTodayAdvice() {
         }
     }
 
-    // 体調による判断
     if (fatigue !== null && fatigue >= 8) {
         mainText = "疲労が強い日です。今日は成果最大化より、崩れない運用を優先してください。";
         adviceItems.push({
@@ -988,7 +954,6 @@ function updateTodayAdvice() {
         });
     }
 
-    // 勉強時間による判断
     if (studyTotal !== null) {
         if (studyTotal === 0) {
             adviceItems.push({
@@ -1008,7 +973,6 @@ function updateTodayAdvice() {
         }
     }
 
-    // 勤務による判断
     if (record.workType) {
         if (record.workType === "21-8" || record.workType === "21-9" || record.workType === "21-6") {
             adviceItems.push({
@@ -1028,7 +992,6 @@ function updateTodayAdvice() {
         }
     }
 
-    // 主科目による補足
     if (record.mainSubject) {
         adviceItems.push({
             text: `主科目は「${record.mainSubject}」です。明日以降の分析で、睡眠や集中力との相性を見ていきます。`,
@@ -1036,7 +999,6 @@ function updateTodayAdvice() {
         });
     }
 
-    // 全体判定
     if (
         sleepHours !== null &&
         sleepHours >= 6.5 &&
@@ -1057,7 +1019,6 @@ function updateTodayAdvice() {
         });
     }
 
-    // 最大5件に絞る
     const limitedItems = adviceItems.slice(0, 5);
 
     main.textContent = mainText;
@@ -1068,7 +1029,6 @@ function updateTodayAdvice() {
     });
 }
 
-// アドバイス項目を追加
 function addAdviceItem(list, text, className) {
     const item = document.createElement("li");
     item.textContent = text;
@@ -1080,14 +1040,332 @@ function addAdviceItem(list, text, className) {
     list.appendChild(item);
 }
 
-// 計算表示をまとめて更新
+// ==============================
+// AI相談用テキスト
+// ==============================
+
+function valueOrDash(value) {
+    return value === undefined || value === null || value === "" ? "未入力" : value;
+}
+
+function getRecentDates(days) {
+    const today = getTodayString();
+    const dates = [];
+
+    for (let offset = days - 1; offset >= 0; offset--) {
+        dates.push(addDays(today, -offset));
+    }
+
+    return dates;
+}
+
+function buildWeeklySummaryText(records) {
+    const dates = getRecentDates(7);
+
+    const sleepValues = [];
+    const efficiencyValues = [];
+    const focusValues = [];
+    const fatigueValues = [];
+    const sleepinessValues = [];
+    const studyValues = [];
+
+    let achievementTargetCount = 0;
+    let achievedCount = 0;
+
+    dates.forEach(date => {
+        const record = records[date];
+
+        if (!record) {
+            return;
+        }
+
+        const sleepHours = getNumberOrNull(record.sleepHours);
+        const efficiency = calculateSleepEfficiencyFromRecord(record);
+        const focus = getNumberOrNull(record.focus);
+        const fatigue = getNumberOrNull(record.fatigue);
+        const sleepiness = getNumberOrNull(record.sleepiness);
+        const study = getNumberOrNull(record.studyTotal);
+        const achievement = calculateAchievementFromRecord(record);
+
+        if (sleepHours !== null) {
+            sleepValues.push(sleepHours);
+        }
+
+        if (efficiency !== null && efficiency <= 100) {
+            efficiencyValues.push(efficiency);
+        }
+
+        if (focus !== null) {
+            focusValues.push(focus);
+        }
+
+        if (fatigue !== null) {
+            fatigueValues.push(fatigue);
+        }
+
+        if (sleepiness !== null) {
+            sleepinessValues.push(sleepiness);
+        }
+
+        if (study !== null) {
+            studyValues.push(study);
+        }
+
+        if (achievement && achievement.canJudgeAchievement) {
+            achievementTargetCount += 1;
+
+            if (achievement.achieved) {
+                achievedCount += 1;
+            }
+        }
+    });
+
+    const studyTotal = studyValues.reduce((sum, value) => sum + value, 0);
+
+    const achievementText =
+        achievementTargetCount === 0
+            ? "未計算"
+            : `${achievedCount}/${achievementTargetCount}日（${Math.round(achievedCount / achievementTargetCount * 100)}%）`;
+
+    return [
+        "【直近7日の要約】",
+        `記録対象期間：${dates[0]} 〜 ${dates[dates.length - 1]}`,
+        `平均実睡眠：${averageText(sleepValues, "時間")}`,
+        `平均睡眠効率：${averageText(efficiencyValues, "%")}`,
+        `平均集中力：${averageText(focusValues, "")}`,
+        `平均疲労：${averageText(fatigueValues, "")}`,
+        `平均眠気：${averageText(sleepinessValues, "")}`,
+        `合計勉強時間：${studyValues.length === 0 ? "未計算" : `${studyTotal}分`}`,
+        `予定達成率：${achievementText}`
+    ].join("\n");
+}
+
+function buildRecentDailyLines(records) {
+    const dates = getRecentDates(7);
+    const lines = [];
+
+    dates.forEach(date => {
+        const record = records[date];
+
+        if (!record) {
+            lines.push(`${date}：記録なし`);
+            return;
+        }
+
+        const efficiency = calculateSleepEfficiencyFromRecord(record);
+        const achievement = calculateAchievementFromRecord(record);
+
+        const efficiencyText =
+            efficiency === null
+                ? "未計算"
+                : efficiency > 100
+                    ? `${efficiency.toFixed(1)}%（要確認）`
+                    : `${efficiency.toFixed(1)}%`;
+
+        const achievementText =
+            achievement && achievement.canJudgeAchievement
+                ? achievement.achieved
+                    ? "予定達成"
+                    : "予定未達"
+                : "予定判定なし";
+
+        lines.push(
+            `${date}：睡眠${valueOrDash(record.sleepHours)}h、効率${efficiencyText}、気分${valueOrDash(record.mood)}、眠気${valueOrDash(record.sleepiness)}、疲労${valueOrDash(record.fatigue)}、集中${valueOrDash(record.focus)}、勉強${valueOrDash(record.studyTotal)}分、勤務${valueOrDash(record.workType)}、${achievementText}`
+        );
+    });
+
+    return [
+        "【直近7日の各日データ】",
+        ...lines
+    ].join("\n");
+}
+
+function buildCurrentDayText(date, record) {
+    const efficiency = calculateSleepEfficiencyFromRecord(record);
+    const achievement = calculateAchievementFromRecord(record);
+
+    const plannedTimeInBed = calculateTimeInBedHours(record.plannedBedtime, record.plannedWakeTime);
+    const actualTimeInBed = calculateTimeInBedHours(record.bedtime, record.wakeTime);
+
+    const efficiencyText =
+        efficiency === null
+            ? "未計算"
+            : efficiency > 100
+                ? `${efficiency.toFixed(1)}%（要確認）`
+                : `${efficiency.toFixed(1)}%`;
+
+    const plannedTimeText =
+        plannedTimeInBed === null ? "未計算" : `${plannedTimeInBed.toFixed(1)}時間`;
+
+    const actualTimeText =
+        actualTimeInBed === null ? "未計算" : `${actualTimeInBed.toFixed(1)}時間`;
+
+    const bedtimeGapText =
+        achievement && achievement.bedtimeGap !== null
+            ? formatGapMinutes(achievement.bedtimeGap)
+            : "未計算";
+
+    const wakeGapText =
+        achievement && achievement.wakeTimeGap !== null
+            ? formatGapMinutes(achievement.wakeTimeGap)
+            : "未計算";
+
+    const timeInBedGapText =
+        achievement && achievement.timeInBedGap !== null
+            ? formatGapMinutes(achievement.timeInBedGap)
+            : "未計算";
+
+    const achievementText =
+        achievement && achievement.canJudgeAchievement
+            ? achievement.achieved
+                ? "予定達成"
+                : "予定未達"
+            : "未計算";
+
+    return [
+        "【現在選択中の日付】",
+        `日付：${date}`,
+        "",
+        "【睡眠】",
+        `予定就寝：${valueOrDash(record.plannedBedtime)}`,
+        `予定起床：${valueOrDash(record.plannedWakeTime)}`,
+        `実際就寝：${valueOrDash(record.bedtime)}`,
+        `実際起床：${valueOrDash(record.wakeTime)}`,
+        `予定在床時間：${plannedTimeText}`,
+        `実際在床時間：${actualTimeText}`,
+        `実睡眠時間：${valueOrDash(record.sleepHours)}時間`,
+        `覚醒回数：${valueOrDash(record.awakeCount)}`,
+        `睡眠効率：${efficiencyText}`,
+        `就寝ズレ：${bedtimeGapText}`,
+        `起床ズレ：${wakeGapText}`,
+        `在床差：${timeInBedGapText}`,
+        `予定達成判定：${achievementText}`,
+        "",
+        "【体調】",
+        `気分：${valueOrDash(record.mood)} / 10`,
+        `眠気：${valueOrDash(record.sleepiness)} / 10`,
+        `疲労：${valueOrDash(record.fatigue)} / 10`,
+        `集中力：${valueOrDash(record.focus)} / 10`,
+        "",
+        "【勉強・勤務】",
+        `総勉強時間：${valueOrDash(record.studyTotal)}分`,
+        `主に勉強した科目：${valueOrDash(record.mainSubject)}`,
+        `勤務区分：${valueOrDash(record.workType)}`,
+        "",
+        "【メモ】",
+        valueOrDash(record.memo)
+    ].join("\n");
+}
+
+function generateAiConsultText() {
+    saveCurrentRecord();
+
+    const records = getRecords();
+    const dateElement = document.getElementById("recordDate");
+    const textarea = document.getElementById("aiConsultText");
+    const copyStatus = document.getElementById("copyStatus");
+
+    if (!dateElement || !textarea) {
+        return;
+    }
+
+    const date = dateElement.value || getTodayString();
+    const record = records[date] || getFormData();
+
+    const text = [
+        "以下は、私の生活記録アプリから出力したデータです。",
+        "公認会計士試験の勉強、夜勤を含む勤務、睡眠リズムの安定を両立したいです。",
+        "このデータをもとに、今日の過ごし方、勉強負荷、睡眠改善、翌日の注意点を具体的に助言してください。",
+        "極端な根性論ではなく、現実的に継続できる提案をしてください。",
+        "",
+        buildCurrentDayText(date, record),
+        "",
+        buildWeeklySummaryText(records),
+        "",
+        buildRecentDailyLines(records),
+        "",
+        "【相談したいこと】",
+        "1. 今日の勉強量は増やすべきか、抑えるべきか。",
+        "2. 睡眠予定は現実的か。",
+        "3. 疲労・眠気・集中力から見て、優先すべき行動は何か。",
+        "4. 明日以降に崩れないための注意点は何か。"
+    ].join("\n");
+
+    textarea.value = text;
+
+    if (copyStatus) {
+        copyStatus.textContent = "作成しました。必要ならコピーしてください。";
+    }
+}
+
+function copyAiConsultText() {
+    const textarea = document.getElementById("aiConsultText");
+    const copyStatus = document.getElementById("copyStatus");
+
+    if (!textarea || !textarea.value) {
+        if (copyStatus) {
+            copyStatus.textContent = "コピーするテキストがありません。先に作成してください。";
+        }
+        return;
+    }
+
+    textarea.focus();
+    textarea.select();
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textarea.value)
+            .then(() => {
+                if (copyStatus) {
+                    copyStatus.textContent = "コピーしました。ChatGPTに貼り付けて相談できます。";
+                }
+            })
+            .catch(() => {
+                fallbackCopyText(textarea, copyStatus);
+            });
+    } else {
+        fallbackCopyText(textarea, copyStatus);
+    }
+}
+
+function fallbackCopyText(textarea, copyStatus) {
+    try {
+        document.execCommand("copy");
+
+        if (copyStatus) {
+            copyStatus.textContent = "コピーしました。";
+        }
+    } catch (error) {
+        console.error(error);
+
+        if (copyStatus) {
+            copyStatus.textContent = "自動コピーに失敗しました。テキストを手動で選択してコピーしてください。";
+        }
+    }
+}
+
+function setupAiTextEvents() {
+    const generateButton = document.getElementById("generateAiTextButton");
+    const copyButton = document.getElementById("copyAiTextButton");
+
+    if (generateButton) {
+        generateButton.addEventListener("click", generateAiConsultText);
+    }
+
+    if (copyButton) {
+        copyButton.addEventListener("click", copyAiConsultText);
+    }
+}
+
+// ==============================
+// サマリー
+// ==============================
+
 function updateAllCalculatedDisplays() {
     updateSleepSummary();
     updateWarnings();
     updateTodayAdvice();
 }
 
-// 直近7日サマリーを更新
 function updateWeeklySummary() {
     const records = getRecords();
     const dates = Object.keys(records)
@@ -1133,7 +1411,6 @@ function updateWeeklySummary() {
     setText("weeklyAvgFocus", averageText(focusValues, ""));
 }
 
-// 予定達成分析を更新
 function updateAchievementSummary() {
     const records = getRecords();
     const dates = Object.keys(records)
@@ -1205,7 +1482,6 @@ function updateAchievementSummary() {
     }
 }
 
-// 平均値を数値で返す
 function averageNumber(values) {
     if (values.length === 0) {
         return null;
@@ -1215,7 +1491,6 @@ function averageNumber(values) {
     return total / values.length;
 }
 
-// ズレの平均を表示
 function setGapSummary(id, value) {
     const element = document.getElementById(id);
 
@@ -1234,7 +1509,6 @@ function setGapSummary(id, value) {
     setSummaryClass(element, value, "gap");
 }
 
-// 平均値の表示
 function averageText(values, unit) {
     if (values.length === 0) {
         return "未計算";
@@ -1254,7 +1528,6 @@ function averageText(values, unit) {
     return average.toFixed(1);
 }
 
-// テキストを設定
 function setText(id, text) {
     const element = document.getElementById(id);
 
@@ -1263,7 +1536,10 @@ function setText(id, text) {
     }
 }
 
-// 体調評価ボタンを作成
+// ==============================
+// 体調ボタン
+// ==============================
+
 function setupRatingButtons() {
     ratingFields.forEach(field => {
         const container = document.querySelector(`.rating-buttons[data-target="${field.id}"]`);
@@ -1293,7 +1569,6 @@ function setupRatingButtons() {
     updateRatingDisplays();
 }
 
-// 体調評価ボタンを押したときの処理
 function handleRatingButtonClick(fieldId, value) {
     const input = document.getElementById(fieldId);
 
@@ -1311,7 +1586,6 @@ function handleRatingButtonClick(fieldId, value) {
     saveCurrentRecord();
 }
 
-// 体調評価ボタンの表示を更新
 function updateRatingDisplays() {
     ratingFields.forEach(field => {
         const input = document.getElementById(field.id);
@@ -1334,7 +1608,10 @@ function updateRatingDisplays() {
     });
 }
 
-// 記録状況を判定
+// ==============================
+// 記録状況・カレンダー・履歴
+// ==============================
+
 function getRecordCompleteness(record) {
     if (!record) {
         return "none";
@@ -1381,7 +1658,6 @@ function getRecordCompleteness(record) {
     return "partial";
 }
 
-// 記録状況ラベル
 function getCompletenessLabel(completeness) {
     if (completeness === "full") {
         return "十分";
@@ -1394,7 +1670,6 @@ function getCompletenessLabel(completeness) {
     return "なし";
 }
 
-// 直近30日の記録状況カレンダーを表示
 function renderRecordCalendar() {
     const calendar = document.getElementById("recordCalendar");
 
@@ -1450,7 +1725,6 @@ function renderRecordCalendar() {
     }
 }
 
-// 履歴フィルターに応じて日付を絞る
 function filterDates(dates) {
     if (historyFilter === "all") {
         return dates;
@@ -1464,7 +1738,6 @@ function filterDates(dates) {
     });
 }
 
-// 履歴一覧を表示
 function renderHistory() {
     const historyList = document.getElementById("historyList");
 
@@ -1583,7 +1856,6 @@ function renderHistory() {
     });
 }
 
-// 履歴フィルターのイベントを設定
 function setupHistoryFilterEvents() {
     const buttons = document.querySelectorAll(".filter-button");
 
@@ -1602,7 +1874,10 @@ function setupHistoryFilterEvents() {
     });
 }
 
-// 削除ボタンの状態を更新
+// ==============================
+// 削除・バックアップ
+// ==============================
+
 function updateDeleteButton() {
     const button = document.getElementById("deleteRecordButton");
     const dateElement = document.getElementById("recordDate");
@@ -1617,7 +1892,6 @@ function updateDeleteButton() {
     button.disabled = !records[date];
 }
 
-// 現在の日付の記録を削除
 function deleteCurrentRecord() {
     const dateElement = document.getElementById("recordDate");
 
@@ -1659,14 +1933,13 @@ function deleteCurrentRecord() {
     console.log("削除しました", date);
 }
 
-// バックアップファイルをダウンロード
 function exportData() {
     const records = getRecords();
     const settings = getSettings();
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "3.0",
+        version: "3.1",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records
@@ -1688,7 +1961,6 @@ function exportData() {
     updateSaveStatus(`バックアップを作成しました：${fileName}`, false);
 }
 
-// 復元データの形式チェック
 function normalizeImportedRecords(importedData) {
     if (!importedData) {
         return null;
@@ -1709,7 +1981,6 @@ function normalizeImportedRecords(importedData) {
     return null;
 }
 
-// 復元データから設定を取得
 function normalizeImportedSettings(importedData) {
     if (
         importedData &&
@@ -1726,7 +1997,6 @@ function normalizeImportedSettings(importedData) {
     return null;
 }
 
-// JSONファイルから復元
 function importDataFromFile(file) {
     if (!file) {
         return;
@@ -1785,7 +2055,10 @@ function importDataFromFile(file) {
     reader.readAsText(file);
 }
 
-// バックアップ・復元イベントを設定
+// ==============================
+// イベント
+// ==============================
+
 function setupBackupEvents() {
     const exportButton = document.getElementById("exportButton");
     const importFile = document.getElementById("importFile");
@@ -1804,7 +2077,6 @@ function setupBackupEvents() {
     }
 }
 
-// 入力イベントを設定
 function setupInputEvents() {
     fieldIds.forEach(id => {
         const element = document.getElementById(id);
@@ -1823,7 +2095,6 @@ function setupInputEvents() {
     });
 }
 
-// 日付変更イベントを設定
 function setupDateEvent() {
     const dateElement = document.getElementById("recordDate");
 
@@ -1842,7 +2113,6 @@ function setupDateEvent() {
     });
 }
 
-// 削除イベントを設定
 function setupDeleteEvent() {
     const button = document.getElementById("deleteRecordButton");
 
@@ -1853,7 +2123,6 @@ function setupDeleteEvent() {
     button.addEventListener("click", deleteCurrentRecord);
 }
 
-// 設定イベントを設定
 function setupSettingsEvents() {
     const button = document.getElementById("saveSettingsButton");
 
@@ -1864,7 +2133,10 @@ function setupSettingsEvents() {
     button.addEventListener("click", saveSettingsFromForm);
 }
 
+// ==============================
 // 初期化
+// ==============================
+
 window.addEventListener("load", () => {
     const dateElement = document.getElementById("recordDate");
 
@@ -1890,6 +2162,7 @@ window.addEventListener("load", () => {
     setupBackupEvents();
     setupHistoryFilterEvents();
     setupSettingsEvents();
+    setupAiTextEvents();
 
     updateRatingDisplays();
     updateTodayAdvice();
