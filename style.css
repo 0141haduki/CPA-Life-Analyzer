@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v4.3 */
+/* CPA Life Analyzer v4.5 */
 
 * {
     box-sizing: border-box;
@@ -137,6 +137,22 @@ textarea {
     background: #fff7ed;
 }
 
+.detection-conclusion-box,
+.correlation-insight-box {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    background: white;
+}
+
+.detection-conclusion {
+    margin: 4px 0 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #9a3412;
+}
+
 .detection-summary,
 .correlation-summary {
     display: grid;
@@ -228,6 +244,75 @@ textarea {
 .correlation-card {
     border-left: 5px solid #7c3aed;
     background: #f5f3ff;
+}
+
+.correlation-insight-box {
+    border-color: #ddd6fe;
+}
+
+.correlation-insight {
+    margin: 4px 0 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #4c1d95;
+}
+
+.correlation-ranking-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.ranking-box {
+    padding: 12px;
+    border: 1px solid #ddd6fe;
+    border-radius: 12px;
+    background: white;
+}
+
+.ranking-box h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: #312e81;
+}
+
+.factor-ranking {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.factor-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.factor-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #1f2937;
+}
+
+.factor-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.factor-score {
+    font-size: 13px;
+    font-weight: 900;
+    color: #4c1d95;
+    white-space: nowrap;
 }
 
 .correlation-item.strong {
@@ -945,5 +1030,13 @@ textarea {
 
     .calendar-day-label {
         font-size: 10px;
+    }
+
+    .factor-item {
+        grid-template-columns: 1fr;
+    }
+
+    .factor-score {
+        white-space: normal;
     }
 }

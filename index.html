@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v4.3</title>
+    <title>CPA Life Analyzer v4.5</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -47,6 +47,13 @@
                 直近の記録から、生活・睡眠・勉強で注意すべき点を自動判定します。
             </p>
 
+            <div class="detection-conclusion-box">
+                <span class="summary-label">今日の結論</span>
+                <p id="autoAlertConclusion" class="detection-conclusion">
+                    記録が増えると、今日の優先方針を表示します。
+                </p>
+            </div>
+
             <div class="detection-summary">
                 <div class="summary-box">
                     <span class="summary-label">警戒</span>
@@ -77,8 +84,7 @@
             <h2>🔍 相関分析</h2>
 
             <p class="hint">
-                直近30日または全期間のデータから、項目同士の関係を計算します。
-                相関は原因を示すものではなく、「関係がありそうな確認候補」です。
+                項目同士の関係を計算します。相関は原因を示すものではなく、「関係がありそうな確認候補」です。
             </p>
 
             <label for="correlationRange">分析期間</label>
@@ -99,12 +105,42 @@
                 </div>
             </div>
 
+            <div class="correlation-insight-box">
+                <span class="summary-label">読み取り</span>
+                <p id="correlationInsight" class="correlation-insight">
+                    記録が増えると、相関から見える確認候補を表示します。
+                </p>
+            </div>
+
+            <div class="correlation-ranking-grid">
+                <div class="ranking-box">
+                    <h3>勉強時間に関係しそうな要因</h3>
+                    <div id="studyFactorRanking" class="factor-ranking">
+                        <p class="empty">未計算</p>
+                    </div>
+                </div>
+
+                <div class="ranking-box">
+                    <h3>集中力に関係しそうな要因</h3>
+                    <div id="focusFactorRanking" class="factor-ranking">
+                        <p class="empty">未計算</p>
+                    </div>
+                </div>
+
+                <div class="ranking-box">
+                    <h3>悪化要因候補</h3>
+                    <div id="riskFactorRanking" class="factor-ranking">
+                        <p class="empty">未計算</p>
+                    </div>
+                </div>
+            </div>
+
             <div id="correlationList" class="correlation-list">
                 <p class="empty">記録が増えると、相関分析を表示します。</p>
             </div>
 
             <p class="hint">
-                ※ 同じ日に両方の数値が入力されているデータが少ない場合は、参考値またはデータ不足として扱います。
+                ※ 有効データが7件未満の場合は判定しません。14件未満は参考値、30件以上で比較的安定した傾向として扱います。
             </p>
         </section>
 
@@ -532,7 +568,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v4.3</p>
+        <p>CPA Life Analyzer v4.5</p>
     </footer>
 
     <script src="script.js"></script>
