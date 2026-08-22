@@ -1,4 +1,4 @@
-/* Life Growth Analyzer v5.4 */
+/* Life Growth Analyzer v6.0 */
 
 * {
     box-sizing: border-box;
@@ -129,6 +129,96 @@ textarea {
 
 .advice-list li.priority-good {
     color: #15803d;
+}
+
+/* 今日の継続項目 */
+.habit-record-card {
+    border-left: 5px solid #22c55e;
+    background: #f0fdf4;
+}
+
+.today-habit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.today-habit-item {
+    padding: 14px;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    background: white;
+}
+
+.today-habit-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.today-habit-name {
+    font-size: 16px;
+    font-weight: 900;
+    color: #14532d;
+}
+
+.today-habit-type {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    background: #dcfce7;
+    color: #166534;
+    white-space: nowrap;
+}
+
+.today-habit-type.avoid {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.today-habit-status {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.habit-button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.habit-action-button {
+    min-height: 42px;
+    border: none;
+    border-radius: 10px;
+    background: #16a34a;
+    color: white;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.habit-action-button:hover {
+    background: #15803d;
+}
+
+.habit-action-button.done {
+    background: #0f766e;
+}
+
+.habit-action-button.break {
+    background: #dc2626;
+}
+
+.habit-action-button.break:hover {
+    background: #b91c1c;
 }
 
 /* 自動検知 */
@@ -380,28 +470,33 @@ textarea {
 .subject-settings-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     margin-top: 16px;
 }
 
 .subject-setting-item {
+    padding: 12px;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    background: white;
+}
+
+.subject-setting-main {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 8px;
     align-items: center;
-    padding: 10px 12px;
-    border: 1px solid #bbf7d0;
-    border-radius: 12px;
-    background: white;
 }
 
 .subject-setting-name {
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     color: #14532d;
 }
 
-.subject-delete-button {
+.subject-delete-button,
+.subsubject-delete-button,
+.habit-delete-button {
     padding: 7px 10px;
     border: none;
     border-radius: 8px;
@@ -412,8 +507,168 @@ textarea {
     cursor: pointer;
 }
 
-.subject-delete-button:hover {
+.subject-delete-button:hover,
+.subsubject-delete-button:hover,
+.habit-delete-button:hover {
     background: #b91c1c;
+}
+
+.subsubject-box {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #d1fae5;
+}
+
+.subsubject-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.subsubject-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid #e2e8f0;
+}
+
+.subsubject-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #334155;
+}
+
+.subsubject-input-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.subsubject-input-row input {
+    margin: 0;
+}
+
+.subsubject-add-button {
+    min-height: 42px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 10px;
+    background: #0f766e;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.subsubject-add-button:hover {
+    background: #115e59;
+}
+
+/* 継続項目設定 */
+.habit-settings-card {
+    border-left: 5px solid #84cc16;
+    background: #f7fee7;
+}
+
+.habit-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.habit-setting-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #d9f99d;
+    border-radius: 12px;
+    background: white;
+}
+
+.habit-setting-name {
+    font-size: 15px;
+    font-weight: 900;
+    color: #365314;
+}
+
+.habit-setting-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+/* 継続分析 */
+.habit-analysis-card {
+    border-left: 5px solid #65a30d;
+    background: #f7fee7;
+}
+
+.habit-analysis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.habit-analysis-item {
+    padding: 12px;
+    border: 1px solid #d9f99d;
+    border-radius: 14px;
+    background: white;
+}
+
+.habit-analysis-title {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 900;
+    color: #365314;
+}
+
+.habit-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.habit-metric {
+    padding: 10px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.habit-metric-label {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 700;
+}
+
+.habit-metric-value {
+    display: block;
+    margin-top: 2px;
+    font-size: 16px;
+    color: #1f2937;
+    font-weight: 900;
+}
+
+.habit-effect-text {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: #334155;
+    font-weight: 700;
 }
 
 /* 項目別分析 */
@@ -1095,19 +1350,28 @@ textarea {
     }
 
     .detection-summary,
-    .correlation-summary {
+    .correlation-summary,
+    .habit-analysis-grid {
         grid-template-columns: 1fr;
     }
 
+    .subject-setting-main,
     .subject-setting-item,
     .subject-analysis-item,
-    .factor-item {
+    .factor-item,
+    .habit-setting-item,
+    .subsubject-item,
+    .subsubject-input-row {
         grid-template-columns: 1fr;
     }
 
     .subject-analysis-time,
     .factor-score {
         white-space: normal;
+    }
+
+    .today-habit-header {
+        flex-direction: column;
     }
 }
 

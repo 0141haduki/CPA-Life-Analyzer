@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Growth Analyzer v5.4</title>
+    <title>Life Growth Analyzer v6.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -12,7 +12,7 @@
 
     <header class="app-header">
         <h1>Life Growth Analyzer</h1>
-        <p>睡眠・体調・行動を記録し、自分の成長パターンを探す</p>
+        <p>睡眠・体調・行動・習慣を記録し、自分の成長パターンを探す</p>
     </header>
 
     <main class="app-container">
@@ -32,7 +32,7 @@
             </p>
 
             <ul id="todayAdviceList" class="advice-list">
-                <li>まずは睡眠実績、体調、取り組み時間を入力してください。</li>
+                <li>まずは睡眠実績、体調、取り組み時間、習慣達成を入力してください。</li>
             </ul>
 
             <p id="adviceStatus" class="hint">
@@ -40,11 +40,27 @@
             </p>
         </section>
 
+        <section class="card habit-record-card">
+            <h2>✅ 今日の継続項目</h2>
+
+            <p class="hint">
+                新聞・掃除・禁欲など、時間を測るより「できたか」を記録したい項目をワンタップで記録します。
+            </p>
+
+            <div id="todayHabitList" class="today-habit-list">
+                <p class="empty">継続項目を設定すると、ここに表示されます。</p>
+            </div>
+
+            <p class="hint">
+                ※ 実行型は「やったら達成」、回避型は「途切れなかったら達成」として扱います。
+            </p>
+        </section>
+
         <section class="card detection-card">
             <h2>🧪 自動検知</h2>
 
             <p class="hint">
-                直近の記録から、生活・睡眠・行動で注意すべき点を自動判定します。
+                直近の記録から、生活・睡眠・行動・習慣で注意すべき点を自動判定します。
             </p>
 
             <div class="detection-conclusion-box">
@@ -148,14 +164,14 @@
             <h2>🧩 取り組み項目設定</h2>
 
             <p class="hint">
-                学習・資格・読書・運動・仕事など、記録したい項目を自由に設定できます。
+                時間を記録する項目です。親項目の下に、教材名・内容名などの子項目を追加できます。
             </p>
 
-            <label for="newSubjectName">追加する項目名</label>
-            <input type="text" id="newSubjectName" placeholder="例：英語、読書、筋トレ、プログラミング">
+            <label for="newSubjectName">追加する親項目名</label>
+            <input type="text" id="newSubjectName" placeholder="例：財務会計論、英語、読書、筋トレ">
 
             <button id="addSubjectButton" class="primary-button">
-                項目を追加
+                親項目を追加
             </button>
 
             <div id="subjectSettingsList" class="subject-settings-list">
@@ -163,8 +179,52 @@
             </div>
 
             <p class="hint">
-                ※ 項目を削除しても、過去の記録データ自体は削除されません。
+                ※ 親項目・子項目を削除しても、過去の記録データ自体は削除されません。
             </p>
+        </section>
+
+        <section class="card habit-settings-card">
+            <h2>🔁 継続項目設定</h2>
+
+            <p class="hint">
+                新聞・掃除・禁欲など、時間ではなく「できたか」「続いたか」で記録する項目です。
+            </p>
+
+            <label for="newHabitName">追加する継続項目名</label>
+            <input type="text" id="newHabitName" placeholder="例：新聞、掃除、禁欲、瞑想、弁当作り">
+
+            <label for="newHabitType">継続項目のタイプ</label>
+            <select id="newHabitType">
+                <option value="action">実行型：やったら達成</option>
+                <option value="avoid">回避型：途切れなければ達成</option>
+            </select>
+
+            <button id="addHabitButton" class="primary-button">
+                継続項目を追加
+            </button>
+
+            <div id="habitSettingsList" class="habit-settings-list">
+                <p class="empty">継続項目を読み込み中です</p>
+            </div>
+        </section>
+
+        <section class="card habit-analysis-card">
+            <h2>📈 継続分析</h2>
+
+            <p class="hint">
+                継続日数、直近7日・30日の達成率、体調や睡眠との関係を確認します。
+            </p>
+
+            <div id="habitAnalysisList" class="habit-analysis-list">
+                <p class="empty">継続項目を記録すると、分析が表示されます。</p>
+            </div>
+
+            <div class="item-warning-box">
+                <span class="summary-label">習慣コメント</span>
+                <p id="habitAnalysisComment" class="item-warning-text">
+                    記録が増えると、習慣と生活状態の関係を表示します。
+                </p>
+            </div>
         </section>
 
         <section class="card item-analysis-card">
@@ -253,7 +313,7 @@
                     <input type="radio" name="consultType" value="today" checked>
                     <span>
                         <strong>今日の行動相談</strong>
-                        <small>今日の取り組み量・勤務前後の動き方を相談する</small>
+                        <small>今日の取り組み量・習慣・勤務前後の動き方を相談する</small>
                     </span>
                 </label>
 
@@ -261,7 +321,7 @@
                     <input type="radio" name="consultType" value="thirty">
                     <span>
                         <strong>直近30日の生活改善相談</strong>
-                        <small>睡眠・疲労・取り組み継続の傾向を相談する</small>
+                        <small>睡眠・疲労・取り組み継続・習慣の傾向を相談する</small>
                     </span>
                 </label>
 
@@ -412,10 +472,19 @@
             <label for="studyTotal">取り組み時間（分）</label>
             <input type="number" id="studyTotal" min="0" placeholder="例：180">
 
-            <label for="mainSubject">主に取り組んだ項目</label>
+            <label for="mainSubject">主に取り組んだ親項目</label>
             <select id="mainSubject">
                 <option value="">未選択</option>
             </select>
+
+            <label for="subSubject">主に取り組んだ子項目・教材名</label>
+            <select id="subSubject">
+                <option value="">未選択</option>
+            </select>
+
+            <p class="hint">
+                ※ 子項目は、取り組み項目設定で親項目ごとに追加できます。
+            </p>
         </section>
 
         <section class="card">
@@ -440,7 +509,7 @@
             <h2>📝 メモ</h2>
 
             <label for="memo">今日のメモ</label>
-            <textarea id="memo" rows="5" placeholder="例：眠気が強かった。少しだけ取り組めた。"></textarea>
+            <textarea id="memo" rows="5" placeholder="例：眠気が強かった。新聞は継続できた。掃除も少しできた。"></textarea>
         </section>
 
         <section class="card warning-card" id="warningCard">
@@ -489,7 +558,7 @@
             </div>
 
             <p class="hint">
-                ※ 予定睡眠だけでは「記録あり」と判定しません。実睡眠・体調・取り組み・勤務・メモなどの入力状況で判定します。
+                ※ 予定睡眠だけでは「記録あり」と判定しません。実睡眠・体調・取り組み・習慣・勤務・メモなどの入力状況で判定します。
             </p>
         </section>
 
@@ -656,7 +725,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>Life Growth Analyzer v5.4</p>
+        <p>Life Growth Analyzer v6.0</p>
     </footer>
 
     <script src="script.js"></script>
