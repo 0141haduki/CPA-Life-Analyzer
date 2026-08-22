@@ -1,13 +1,11 @@
-// CPA Life Analyzer v3.1
+// CPA Life Analyzer v3.4
 
-console.log("CPA Life Analyzer v3.1 起動");
+console.log("CPA Life Analyzer v3.4 起動");
 
-// localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
 const SETTINGS_KEY = "CPA_LIFE_ANALYZER_SETTINGS_V2";
 
-// 日付以外の入力項目
 const fieldIds = [
     "plannedBedtime",
     "plannedWakeTime",
@@ -25,7 +23,6 @@ const fieldIds = [
     "memo"
 ];
 
-// 体調評価ボタンの項目
 const ratingFields = [
     { id: "mood", label: "気分" },
     { id: "sleepiness", label: "眠気" },
@@ -109,6 +106,17 @@ function getDaysDiff(dateText) {
 
     const diffMs = today - target;
     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function getRecentDates(days) {
+    const today = getTodayString();
+    const dates = [];
+
+    for (let offset = days - 1; offset >= 0; offset--) {
+        dates.push(addDays(today, -offset));
+    }
+
+    return dates;
 }
 
 // ==============================
@@ -411,6 +419,25 @@ function timeToMinutes(timeText) {
     }
 
     return hours * 60 + minutes;
+}
+
+function isNextDaySleep(bedtime, wakeTime) {
+    const bedMinutes = timeToMinutes(bedtime);
+    const wakeMinutes = timeToMinutes(wakeTime);
+
+    if (bedMinutes === null || wakeMinutes === null) {
+        return false;
+    }
+
+    return wakeMinutes <= bedMinutes;
+}
+
+function formatTimeWithNextDay(startTime, endTime) {
+    if (!endTime) {
+        return "未入力";
+    }
+
+    return isNextDaySleep(startTime, endTime) ? `${endTime}（翌日）` : endTime;
 }
 
 function calculateTimeInBedHours(bedtime, wakeTime) {
@@ -1048,27 +1075,25 @@ function valueOrDash(value) {
     return value === undefined || value === null || value === "" ? "未入力" : value;
 }
 
-function getRecentDates(days) {
-    const today = getTodayString();
-    const dates = [];
-
-    for (let offset = days - 1; offset >= 0; offset--) {
-        dates.push(addDays(today, -offset));
-    }
-
-    return dates;
+function isNightShift(workType) {
+    return workType === "21-6" || workType === "21-8" || workType === "21-9";
 }
 
-function buildWeeklySummaryText(records) {
-    const dates = getRecentDates(7);
-
+function buildPeriodStats(records, dates) {
     const sleepValues = [];
     const efficiencyValues = [];
     const focusValues = [];
     const fatigueValues = [];
     const sleepinessValues = [];
-    const studyValues = [];
+    const bedtimeGaps = [];
+    const wakeTimeGaps = [];
 
+    let recordDays = 0;
+    let sleepShortDays = 0;
+    let sleepLongDays = 0;
+    let studyTotal = 0;
+    let studyDays = 0;
+    let nightShiftDays = 0;
     let achievementTargetCount = 0;
     let achievedCount = 0;
 
@@ -1078,6 +1103,8 @@ function buildWeeklySummaryText(records) {
         if (!record) {
             return;
         }
+
+        recordDays += 1;
 
         const sleepHours = getNumberOrNull(record.sleepHours);
         const efficiency = calculateSleepEfficiencyFromRecord(record);
@@ -1089,6 +1116,14 @@ function buildWeeklySummaryText(records) {
 
         if (sleepHours !== null) {
             sleepValues.push(sleepHours);
+
+            if (sleepHours < 6) {
+                sleepShortDays += 1;
+            }
+
+            if (sleepHours >= 9) {
+                sleepLongDays += 1;
+            }
         }
 
         if (efficiency !== null && efficiency <= 100) {
@@ -1108,36 +1143,145 @@ function buildWeeklySummaryText(records) {
         }
 
         if (study !== null) {
-            studyValues.push(study);
+            studyTotal += study;
+
+            if (study > 0) {
+                studyDays += 1;
+            }
         }
 
-        if (achievement && achievement.canJudgeAchievement) {
-            achievementTargetCount += 1;
+        if (isNightShift(record.workType)) {
+            nightShiftDays += 1;
+        }
 
-            if (achievement.achieved) {
-                achievedCount += 1;
+        if (achievement) {
+            if (achievement.bedtimeGap !== null) {
+                bedtimeGaps.push(achievement.bedtimeGap);
+            }
+
+            if (achievement.wakeTimeGap !== null) {
+                wakeTimeGaps.push(achievement.wakeTimeGap);
+            }
+
+            if (achievement.canJudgeAchievement) {
+                achievementTargetCount += 1;
+
+                if (achievement.achieved) {
+                    achievedCount += 1;
+                }
             }
         }
     });
 
-    const studyTotal = studyValues.reduce((sum, value) => sum + value, 0);
+    const achievementRate =
+        achievementTargetCount === 0
+            ? null
+            : achievedCount / achievementTargetCount * 100;
+
+    return {
+        targetDays: dates.length,
+        recordDays,
+        sleepValues,
+        efficiencyValues,
+        focusValues,
+        fatigueValues,
+        sleepinessValues,
+        bedtimeGaps,
+        wakeTimeGaps,
+        sleepShortDays,
+        sleepLongDays,
+        studyTotal,
+        studyDays,
+        nightShiftDays,
+        achievementTargetCount,
+        achievedCount,
+        achievementRate
+    };
+}
+
+function buildPeriodSummaryText(title, dates, stats) {
+    const firstDate = dates[0] || "不明";
+    const lastDate = dates[dates.length - 1] || "不明";
 
     const achievementText =
-        achievementTargetCount === 0
+        stats.achievementTargetCount === 0
             ? "未計算"
-            : `${achievedCount}/${achievementTargetCount}日（${Math.round(achievedCount / achievementTargetCount * 100)}%）`;
+            : `${stats.achievedCount}/${stats.achievementTargetCount}日（${Math.round(stats.achievementRate)}%）`;
 
     return [
-        "【直近7日の要約】",
-        `記録対象期間：${dates[0]} 〜 ${dates[dates.length - 1]}`,
-        `平均実睡眠：${averageText(sleepValues, "時間")}`,
-        `平均睡眠効率：${averageText(efficiencyValues, "%")}`,
-        `平均集中力：${averageText(focusValues, "")}`,
-        `平均疲労：${averageText(fatigueValues, "")}`,
-        `平均眠気：${averageText(sleepinessValues, "")}`,
-        `合計勉強時間：${studyValues.length === 0 ? "未計算" : `${studyTotal}分`}`,
+        `【${title}】`,
+        `対象期間：${firstDate} 〜 ${lastDate}`,
+        `記録日数：${stats.recordDays}/${stats.targetDays}日`,
+        `平均実睡眠：${averageText(stats.sleepValues, "時間")}`,
+        `平均睡眠効率：${averageText(stats.efficiencyValues, "%")}`,
+        `睡眠不足日数（6時間未満）：${stats.sleepShortDays}日`,
+        `寝すぎ日数（9時間以上）：${stats.sleepLongDays}日`,
+        `平均集中力：${averageText(stats.focusValues, "")}`,
+        `平均疲労：${averageText(stats.fatigueValues, "")}`,
+        `平均眠気：${averageText(stats.sleepinessValues, "")}`,
+        `合計勉強時間：${stats.studyTotal}分`,
+        `勉強した日数：${stats.studyDays}日`,
+        `夜勤回数：${stats.nightShiftDays}回`,
+        `平均就寝ズレ：${formatGapMinutes(averageNumber(stats.bedtimeGaps))}`,
+        `平均起床ズレ：${formatGapMinutes(averageNumber(stats.wakeTimeGaps))}`,
         `予定達成率：${achievementText}`
     ].join("\n");
+}
+
+function buildWeeklySummaryText(records) {
+    const dates = getRecentDates(7);
+    const stats = buildPeriodStats(records, dates);
+    return buildPeriodSummaryText("直近7日の要約", dates, stats);
+}
+
+function buildThirtyDaySummaryText(records) {
+    const dates = getRecentDates(30);
+    const stats = buildPeriodStats(records, dates);
+    return buildPeriodSummaryText("直近30日の要約", dates, stats);
+}
+
+function buildMonthlySummaryText(records) {
+    const monthMap = {};
+
+    Object.keys(records).sort().forEach(date => {
+        const monthKey = date.slice(0, 7);
+
+        if (!monthMap[monthKey]) {
+            monthMap[monthKey] = [];
+        }
+
+        monthMap[monthKey].push(date);
+    });
+
+    const monthKeys = Object.keys(monthMap).sort();
+
+    if (monthKeys.length === 0) {
+        return [
+            "【月別要約】",
+            "保存されている記録がありません。"
+        ].join("\n");
+    }
+
+    const recentMonthKeys = monthKeys.slice(-12);
+    const lines = ["【月別要約】", "※ 最大で直近12か月分を表示します。"];
+
+    recentMonthKeys.forEach(monthKey => {
+        const dates = monthMap[monthKey];
+        const stats = buildPeriodStats(records, dates);
+
+        const achievementText =
+            stats.achievementTargetCount === 0
+                ? "未計算"
+                : `${Math.round(stats.achievementRate)}%`;
+
+        const studyHoursText = `${(stats.studyTotal / 60).toFixed(1)}時間`;
+
+        lines.push(
+            `${monthKey}：記録${stats.recordDays}日、平均睡眠${averageText(stats.sleepValues, "時間")}、勉強${studyHoursText}、勉強日${stats.studyDays}日、夜勤${stats.nightShiftDays}回、平均集中${averageText(stats.focusValues, "")}、予定達成率${achievementText}`
+        );
+    });
+
+    return lines.join("\n");
 }
 
 function buildRecentDailyLines(records) {
@@ -1187,6 +1331,9 @@ function buildCurrentDayText(date, record) {
     const plannedTimeInBed = calculateTimeInBedHours(record.plannedBedtime, record.plannedWakeTime);
     const actualTimeInBed = calculateTimeInBedHours(record.bedtime, record.wakeTime);
 
+    const plannedWakeText = formatTimeWithNextDay(record.plannedBedtime, record.plannedWakeTime);
+    const actualWakeText = formatTimeWithNextDay(record.bedtime, record.wakeTime);
+
     const efficiencyText =
         efficiency === null
             ? "未計算"
@@ -1228,9 +1375,9 @@ function buildCurrentDayText(date, record) {
         "",
         "【睡眠】",
         `予定就寝：${valueOrDash(record.plannedBedtime)}`,
-        `予定起床：${valueOrDash(record.plannedWakeTime)}`,
+        `予定起床：${plannedWakeText}`,
         `実際就寝：${valueOrDash(record.bedtime)}`,
-        `実際起床：${valueOrDash(record.wakeTime)}`,
+        `実際起床：${actualWakeText}`,
         `予定在床時間：${plannedTimeText}`,
         `実際在床時間：${actualTimeText}`,
         `実睡眠時間：${valueOrDash(record.sleepHours)}時間`,
@@ -1275,12 +1422,16 @@ function generateAiConsultText() {
     const text = [
         "以下は、私の生活記録アプリから出力したデータです。",
         "公認会計士試験の勉強、夜勤を含む勤務、睡眠リズムの安定を両立したいです。",
-        "このデータをもとに、今日の過ごし方、勉強負荷、睡眠改善、翌日の注意点を具体的に助言してください。",
+        "このデータをもとに、今日の過ごし方、勉強負荷、睡眠改善、翌日の注意点、長期的な改善方針を具体的に助言してください。",
         "極端な根性論ではなく、現実的に継続できる提案をしてください。",
         "",
         buildCurrentDayText(date, record),
         "",
         buildWeeklySummaryText(records),
+        "",
+        buildThirtyDaySummaryText(records),
+        "",
+        buildMonthlySummaryText(records),
         "",
         buildRecentDailyLines(records),
         "",
@@ -1288,7 +1439,9 @@ function generateAiConsultText() {
         "1. 今日の勉強量は増やすべきか、抑えるべきか。",
         "2. 睡眠予定は現実的か。",
         "3. 疲労・眠気・集中力から見て、優先すべき行動は何か。",
-        "4. 明日以降に崩れないための注意点は何か。"
+        "4. 直近30日の傾向から見て、生活リズムの問題点は何か。",
+        "5. 月別要約から見て、長期的に改善すべき点は何か。",
+        "6. 明日以降に崩れないための具体策は何か。"
     ].join("\n");
 
     textarea.value = text;
@@ -1374,41 +1527,12 @@ function updateWeeklySummary() {
             return diff >= 0 && diff <= 6;
         });
 
-    const sleepValues = [];
-    const efficiencyValues = [];
-    const focusValues = [];
-    let studyTotal = 0;
-    let hasStudyData = false;
+    const stats = buildPeriodStats(records, dates);
 
-    dates.forEach(date => {
-        const record = records[date];
-
-        const sleepHours = getNumberOrNull(record.sleepHours);
-        if (sleepHours !== null) {
-            sleepValues.push(sleepHours);
-        }
-
-        const efficiency = calculateSleepEfficiencyFromRecord(record);
-        if (efficiency !== null && efficiency <= 100) {
-            efficiencyValues.push(efficiency);
-        }
-
-        const focus = getNumberOrNull(record.focus);
-        if (focus !== null) {
-            focusValues.push(focus);
-        }
-
-        const study = getNumberOrNull(record.studyTotal);
-        if (study !== null) {
-            studyTotal += study;
-            hasStudyData = true;
-        }
-    });
-
-    setText("weeklyAvgSleep", averageText(sleepValues, "時間"));
-    setText("weeklyAvgEfficiency", averageText(efficiencyValues, "%"));
-    setText("weeklyStudyTotal", hasStudyData ? `${studyTotal}分` : "未計算");
-    setText("weeklyAvgFocus", averageText(focusValues, ""));
+    setText("weeklyAvgSleep", averageText(stats.sleepValues, "時間"));
+    setText("weeklyAvgEfficiency", averageText(stats.efficiencyValues, "%"));
+    setText("weeklyStudyTotal", stats.studyTotal > 0 ? `${stats.studyTotal}分` : "未計算");
+    setText("weeklyAvgFocus", averageText(stats.focusValues, ""));
 }
 
 function updateAchievementSummary() {
@@ -1419,50 +1543,22 @@ function updateAchievementSummary() {
             return diff >= 0 && diff <= 6;
         });
 
-    const bedtimeGaps = [];
-    const wakeTimeGaps = [];
+    const stats = buildPeriodStats(records, dates);
+
+    const avgBedtimeGap = averageNumber(stats.bedtimeGaps);
+    const avgWakeTimeGap = averageNumber(stats.wakeTimeGaps);
+
     const timeInBedGaps = [];
 
-    let achievementTargetCount = 0;
-    let achievedCount = 0;
-
     dates.forEach(date => {
-        const record = records[date];
-        const achievement = calculateAchievementFromRecord(record);
+        const achievement = calculateAchievementFromRecord(records[date]);
 
-        if (!achievement) {
-            return;
-        }
-
-        if (achievement.bedtimeGap !== null) {
-            bedtimeGaps.push(achievement.bedtimeGap);
-        }
-
-        if (achievement.wakeTimeGap !== null) {
-            wakeTimeGaps.push(achievement.wakeTimeGap);
-        }
-
-        if (achievement.timeInBedGap !== null) {
+        if (achievement && achievement.timeInBedGap !== null) {
             timeInBedGaps.push(achievement.timeInBedGap);
-        }
-
-        if (achievement.canJudgeAchievement) {
-            achievementTargetCount += 1;
-
-            if (achievement.achieved) {
-                achievedCount += 1;
-            }
         }
     });
 
-    const avgBedtimeGap = averageNumber(bedtimeGaps);
-    const avgWakeTimeGap = averageNumber(wakeTimeGaps);
     const avgTimeInBedGap = averageNumber(timeInBedGaps);
-
-    const achievementRate =
-        achievementTargetCount === 0
-            ? null
-            : achievedCount / achievementTargetCount * 100;
 
     setGapSummary("weeklyAvgBedtimeGap", avgBedtimeGap);
     setGapSummary("weeklyAvgWakeTimeGap", avgWakeTimeGap);
@@ -1473,11 +1569,11 @@ function updateAchievementSummary() {
     if (achievementElement) {
         achievementElement.classList.remove("good", "warning", "danger");
 
-        if (achievementRate === null) {
+        if (stats.achievementRate === null) {
             achievementElement.textContent = "未計算";
         } else {
-            achievementElement.textContent = `${achievementRate.toFixed(0)}%`;
-            setSummaryClass(achievementElement, achievementRate, "achievement");
+            achievementElement.textContent = `${stats.achievementRate.toFixed(0)}%`;
+            setSummaryClass(achievementElement, stats.achievementRate, "achievement");
         }
     }
 }
@@ -1806,7 +1902,7 @@ function renderHistory() {
 
         const planText =
             record.plannedBedtime && record.plannedWakeTime
-                ? `予定 ${record.plannedBedtime}-${record.plannedWakeTime}`
+                ? `予定 ${record.plannedBedtime}-${formatTimeWithNextDay(record.plannedBedtime, record.plannedWakeTime)}`
                 : "予定 未入力";
 
         const bedtimeGapText =
@@ -1939,7 +2035,7 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "3.1",
+        version: "3.4",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records

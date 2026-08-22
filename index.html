@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v3.1</title>
+    <title>CPA Life Analyzer v3.4</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -44,7 +44,7 @@
             <h2>🤖 AI相談用テキスト</h2>
 
             <p class="hint">
-                現在の日付と直近7日の記録から、ChatGPTに貼り付ける相談文を作成します。
+                現在の日付、直近7日、直近30日、月別要約から、ChatGPTに貼り付ける相談文を作成します。
             </p>
 
             <button id="generateAiTextButton" class="primary-button">
@@ -52,7 +52,7 @@
             </button>
 
             <label for="aiConsultText">生成された相談文</label>
-            <textarea id="aiConsultText" rows="12" readonly placeholder="ここにAI相談用テキストが表示されます"></textarea>
+            <textarea id="aiConsultText" rows="14" readonly placeholder="ここにAI相談用テキストが表示されます"></textarea>
 
             <button id="copyAiTextButton" class="secondary-button">
                 テキストをコピー
@@ -365,7 +365,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v3.1</p>
+        <p>CPA Life Analyzer v3.4</p>
     </footer>
 
     <script src="script.js"></script>
