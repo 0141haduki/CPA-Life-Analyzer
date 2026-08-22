@@ -1,6 +1,6 @@
-// CPA Life Analyzer v2.9
+// CPA Life Analyzer v2.11
 
-console.log("CPA Life Analyzer v2.9 起動");
+console.log("CPA Life Analyzer v2.11 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
@@ -23,6 +23,26 @@ const fieldIds = [
     "mainSubject",
     "workType",
     "memo"
+];
+
+// 体調評価ボタンの項目
+const ratingFields = [
+    {
+        id: "mood",
+        label: "気分"
+    },
+    {
+        id: "sleepiness",
+        label: "眠気"
+    },
+    {
+        id: "fatigue",
+        label: "疲労"
+    },
+    {
+        id: "focus",
+        label: "集中力"
+    }
 ];
 
 // 現在選択中の日付
@@ -48,10 +68,65 @@ function getCurrentTimeString() {
     return `${hours}:${minutes}`;
 }
 
+// YYYY-MM-DD を Date に変換
+function dateStringToDate(dateText) {
+    const parts = dateText.split("-").map(Number);
+
+    if (parts.length !== 3) {
+        return null;
+    }
+
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+
+    if (!year || !month || !day) {
+        return null;
+    }
+
+    return new Date(year, month - 1, day);
+}
+
+// Date を YYYY-MM-DD に変換
+function dateToString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+// 日付に日数を足す
+function addDays(dateText, days) {
+    const date = dateStringToDate(dateText);
+
+    if (!date) {
+        return dateText;
+    }
+
+    date.setDate(date.getDate() + days);
+    return dateToString(date);
+}
+
+// MM/DD 表示
+function formatShortDate(dateText) {
+    const parts = dateText.split("-");
+
+    if (parts.length !== 3) {
+        return dateText;
+    }
+
+    return `${Number(parts[1])}/${Number(parts[2])}`;
+}
+
 // 日付差を計算
 function getDaysDiff(dateText) {
-    const today = new Date(getTodayString());
-    const target = new Date(dateText);
+    const today = dateStringToDate(getTodayString());
+    const target = dateStringToDate(dateText);
+
+    if (!today || !target) {
+        return 99999;
+    }
+
     const diffMs = today - target;
     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
@@ -239,6 +314,7 @@ function setFormData(data) {
         }
     }
 
+    updateRatingDisplays();
     updateAllCalculatedDisplays();
 }
 
@@ -252,6 +328,7 @@ function clearForm() {
         }
     });
 
+    updateRatingDisplays();
     updateAllCalculatedDisplays();
 }
 
@@ -284,6 +361,7 @@ function saveCurrentRecord() {
     }
 
     renderHistory();
+    renderRecordCalendar();
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
@@ -302,6 +380,7 @@ function loadRecord(date) {
         updateSaveStatus(`読み込みました：${date}`, false);
     } else {
         applyDefaultPlanToForm();
+        updateRatingDisplays();
         updateAllCalculatedDisplays();
         updateSaveStatus(`新しい記録です：${date}`, false);
     }
@@ -311,6 +390,7 @@ function loadRecord(date) {
 
     updateAllCalculatedDisplays();
     renderHistory();
+    renderRecordCalendar();
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
@@ -938,6 +1018,193 @@ function setText(id, text) {
     }
 }
 
+// 体調評価ボタンを作成
+function setupRatingButtons() {
+    ratingFields.forEach(field => {
+        const container = document.querySelector(`.rating-buttons[data-target="${field.id}"]`);
+
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = "";
+
+        for (let value = 1; value <= 10; value++) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "rating-button";
+            button.textContent = String(value);
+            button.dataset.target = field.id;
+            button.dataset.value = String(value);
+
+            button.addEventListener("click", () => {
+                handleRatingButtonClick(field.id, String(value));
+            });
+
+            container.appendChild(button);
+        }
+    });
+
+    updateRatingDisplays();
+}
+
+// 体調評価ボタンを押したときの処理
+function handleRatingButtonClick(fieldId, value) {
+    const input = document.getElementById(fieldId);
+
+    if (!input) {
+        return;
+    }
+
+    if (input.value === value) {
+        input.value = "";
+    } else {
+        input.value = value;
+    }
+
+    updateRatingDisplays();
+    saveCurrentRecord();
+}
+
+// 体調評価ボタンの表示を更新
+function updateRatingDisplays() {
+    ratingFields.forEach(field => {
+        const input = document.getElementById(field.id);
+        const display = document.getElementById(`${field.id}Display`);
+        const buttons = document.querySelectorAll(`.rating-button[data-target="${field.id}"]`);
+
+        const value = input ? input.value : "";
+
+        if (display) {
+            display.textContent = value ? `${value} / 10` : "未入力";
+        }
+
+        buttons.forEach(button => {
+            if (button.dataset.value === value) {
+                button.classList.add("selected");
+            } else {
+                button.classList.remove("selected");
+            }
+        });
+    });
+}
+
+// 記録状況を判定
+function getRecordCompleteness(record) {
+    if (!record) {
+        return "none";
+    }
+
+    const hasActualSleep =
+        Boolean(record.bedtime) ||
+        Boolean(record.wakeTime) ||
+        Boolean(record.sleepHours) ||
+        Boolean(record.awakeCount);
+
+    const hasCondition =
+        Boolean(record.mood) ||
+        Boolean(record.sleepiness) ||
+        Boolean(record.fatigue) ||
+        Boolean(record.focus);
+
+    const hasStudy =
+        Boolean(record.studyTotal) ||
+        Boolean(record.mainSubject);
+
+    const hasWork =
+        Boolean(record.workType);
+
+    const hasMemo =
+        Boolean(record.memo && record.memo.trim() !== "");
+
+    const categoryCount = [
+        hasActualSleep,
+        hasCondition,
+        hasStudy,
+        hasWork,
+        hasMemo
+    ].filter(Boolean).length;
+
+    if (categoryCount === 0) {
+        return "none";
+    }
+
+    if (categoryCount >= 2) {
+        return "full";
+    }
+
+    return "partial";
+}
+
+// 記録状況ラベル
+function getCompletenessLabel(completeness) {
+    if (completeness === "full") {
+        return "十分";
+    }
+
+    if (completeness === "partial") {
+        return "一部";
+    }
+
+    return "なし";
+}
+
+// 直近30日の記録状況カレンダーを表示
+function renderRecordCalendar() {
+    const calendar = document.getElementById("recordCalendar");
+
+    if (!calendar) {
+        return;
+    }
+
+    const records = getRecords();
+    const todayText = getTodayString();
+
+    calendar.innerHTML = "";
+
+    for (let offset = 29; offset >= 0; offset--) {
+        const dateText = addDays(todayText, -offset);
+        const record = records[dateText];
+        const completeness = getRecordCompleteness(record);
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `calendar-day ${completeness}`;
+        button.title = `${dateText}：${getCompletenessLabel(completeness)}`;
+
+        if (dateText === todayText) {
+            button.classList.add("today");
+        }
+
+        if (dateText === currentDate) {
+            button.classList.add("selected");
+        }
+
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "calendar-day-number";
+        dateSpan.textContent = formatShortDate(dateText);
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "calendar-day-label";
+        labelSpan.textContent = getCompletenessLabel(completeness);
+
+        button.appendChild(dateSpan);
+        button.appendChild(labelSpan);
+
+        button.addEventListener("click", () => {
+            const dateElement = document.getElementById("recordDate");
+
+            if (dateElement) {
+                dateElement.value = dateText;
+            }
+
+            loadRecord(dateText);
+        });
+
+        calendar.appendChild(button);
+    }
+}
+
 // 履歴フィルターに応じて日付を絞る
 function filterDates(dates) {
     if (historyFilter === "all") {
@@ -984,6 +1251,7 @@ function renderHistory() {
 
     dates.forEach(date => {
         const button = document.createElement("button");
+        button.type = "button";
         button.className = "history-item";
 
         if (date === currentDate) {
@@ -991,6 +1259,8 @@ function renderHistory() {
         }
 
         const record = records[date];
+        const completeness = getRecordCompleteness(record);
+        button.classList.add(completeness);
 
         const efficiency = calculateSleepEfficiencyFromRecord(record);
         const achievement = calculateAchievementFromRecord(record);
@@ -1010,6 +1280,11 @@ function renderHistory() {
         const workText = record.workType
             ? `勤務 ${record.workType}`
             : "勤務 未入力";
+
+        const conditionText =
+            record.mood || record.sleepiness || record.fatigue || record.focus
+                ? `体調 気分${record.mood || "-"} 眠気${record.sleepiness || "-"} 疲労${record.fatigue || "-"} 集中${record.focus || "-"}`
+                : "体調 未入力";
 
         const planText =
             record.plannedBedtime && record.plannedWakeTime
@@ -1041,10 +1316,11 @@ function renderHistory() {
                     : "予定判定 未計算";
 
         button.innerHTML = `
-            <span class="history-date">${date}</span>
+            <span class="history-date">${date}　${getCompletenessLabel(completeness)}記録</span>
             <span class="history-detail">${planText}</span>
             <span class="history-detail">${sleepText}　${efficiencyText}</span>
             <span class="history-detail ${achievementClass}">${bedtimeGapText}　${wakeGapText}　${achievementText}</span>
+            <span class="history-detail">${conditionText}</span>
             <span class="history-detail">${studyText}　${workText}</span>
         `;
 
@@ -1130,6 +1406,7 @@ function deleteCurrentRecord() {
     updateAllCalculatedDisplays();
     updateSaveStatus(`削除しました：${date}`, false);
     renderHistory();
+    renderRecordCalendar();
     updateWeeklySummary();
     updateAchievementSummary();
     updateDeleteButton();
@@ -1144,7 +1421,7 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "2.9",
+        version: "2.11",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records
@@ -1288,8 +1565,15 @@ function setupInputEvents() {
         const element = document.getElementById(id);
 
         if (element) {
-            element.addEventListener("input", saveCurrentRecord);
-            element.addEventListener("change", saveCurrentRecord);
+            element.addEventListener("input", () => {
+                updateRatingDisplays();
+                saveCurrentRecord();
+            });
+
+            element.addEventListener("change", () => {
+                updateRatingDisplays();
+                saveCurrentRecord();
+            });
         }
     });
 }
@@ -1345,6 +1629,7 @@ window.addEventListener("load", () => {
     }
 
     loadSettingsToForm();
+    setupRatingButtons();
 
     const lastDate = localStorage.getItem(LAST_DATE_KEY);
     const startDate = lastDate || getTodayString();
@@ -1361,6 +1646,8 @@ window.addEventListener("load", () => {
     setupHistoryFilterEvents();
     setupSettingsEvents();
 
+    updateRatingDisplays();
+    renderRecordCalendar();
     updateDeleteButton();
     updateWeeklySummary();
     updateAchievementSummary();

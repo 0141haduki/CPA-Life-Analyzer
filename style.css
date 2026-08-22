@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v2.9 */
+/* CPA Life Analyzer v2.11 */
 
 * {
     box-sizing: border-box;
@@ -103,6 +103,108 @@ textarea {
     color: #0369a1;
 }
 
+/* 記録状況カレンダー */
+.calendar-card {
+    border-left: 5px solid #0ea5e9;
+}
+
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #475569;
+}
+
+.calendar-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid #cbd5e1;
+}
+
+.legend-dot.full {
+    background: #dcfce7;
+    border-color: #22c55e;
+}
+
+.legend-dot.partial {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.legend-dot.empty-day {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.record-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.calendar-day {
+    min-height: 58px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 7px 5px;
+    background: #f8fafc;
+    cursor: pointer;
+    text-align: center;
+    font-size: 13px;
+}
+
+.calendar-day:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.calendar-day.full {
+    background: #dcfce7;
+    border-color: #22c55e;
+}
+
+.calendar-day.partial {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.calendar-day.none {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #64748b;
+}
+
+.calendar-day.today {
+    box-shadow: 0 0 0 2px #0ea5e9 inset;
+}
+
+.calendar-day.selected {
+    box-shadow: 0 0 0 3px #2563eb inset;
+    font-weight: 800;
+}
+
+.calendar-day-number {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.calendar-day-label {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+}
+
 /* サマリー */
 .summary-card {
     border-left: 5px solid #0f766e;
@@ -158,6 +260,75 @@ textarea {
     margin: 12px 0 0;
     font-size: 13px;
     color: #64748b;
+}
+
+/* 体調ボタン */
+.condition-card {
+    border-left: 5px solid #ec4899;
+}
+
+.rating-block {
+    margin-top: 18px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.rating-block:first-of-type {
+    margin-top: 0;
+}
+
+.rating-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.rating-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1f2937;
+}
+
+.rating-current {
+    font-size: 13px;
+    font-weight: 800;
+    color: #475569;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+
+.rating-buttons {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+}
+
+.rating-button {
+    min-height: 42px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: white;
+    color: #1f2937;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.rating-button:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+}
+
+.rating-button.selected {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
 }
 
 /* 入力チェック */
@@ -318,6 +489,18 @@ textarea {
     font-weight: 700;
 }
 
+.history-item.full {
+    border-left: 6px solid #22c55e;
+}
+
+.history-item.partial {
+    border-left: 6px solid #f59e0b;
+}
+
+.history-item.none {
+    border-left: 6px solid #cbd5e1;
+}
+
 .history-date {
     display: block;
     font-weight: 800;
@@ -352,6 +535,12 @@ textarea {
     font-size: 13px;
 }
 
+@media (max-width: 600px) {
+    .rating-buttons {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
 @media (max-width: 480px) {
     .app-header h1 {
         font-size: 24px;
@@ -375,5 +564,23 @@ textarea {
 
     .history-controls {
         grid-template-columns: 1fr;
+    }
+
+    .record-calendar {
+        gap: 6px;
+    }
+
+    .calendar-day {
+        min-height: 52px;
+        padding: 6px 3px;
+        font-size: 12px;
+    }
+
+    .calendar-day-number {
+        font-size: 14px;
+    }
+
+    .calendar-day-label {
+        font-size: 10px;
     }
 }
