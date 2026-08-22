@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Growth Analyzer v6.0</title>
+    <title>Life Growth Analyzer v6.5</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -46,6 +46,38 @@
             <p class="hint">
                 新聞・掃除・禁欲など、時間を測るより「できたか」を記録したい項目をワンタップで記録します。
             </p>
+
+            <div class="habit-today-summary">
+                <div class="summary-box">
+                    <span class="summary-label">今日の達成</span>
+                    <span id="habitTodayDoneCount" class="summary-value">0件</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">未記録</span>
+                    <span id="habitTodayPendingCount" class="summary-value">0件</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">最長継続</span>
+                    <span id="habitTodayTopStreak" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div class="habit-filter-tabs">
+                <button type="button" class="habit-filter-button active" data-habit-filter="all">
+                    すべて
+                </button>
+                <button type="button" class="habit-filter-button" data-habit-filter="pending">
+                    未記録
+                </button>
+                <button type="button" class="habit-filter-button" data-habit-filter="done">
+                    達成済み
+                </button>
+                <button type="button" class="habit-filter-button" data-habit-filter="failed">
+                    途切れ・未達成
+                </button>
+            </div>
 
             <div id="todayHabitList" class="today-habit-list">
                 <p class="empty">継続項目を設定すると、ここに表示されます。</p>
@@ -94,6 +126,61 @@
             <p class="hint">
                 ※ 医学的診断ではありません。生活記録にもとづく確認候補です。
             </p>
+        </section>
+
+        <section class="card weekly-review-card">
+            <h2>🧾 週間レビュー</h2>
+
+            <p class="hint">
+                直近7日をもとに、今週の良かった点・崩れた点・来週の最低ラインを自動で整理します。
+            </p>
+
+            <div class="weekly-review-conclusion-box">
+                <span class="summary-label">今週の結論</span>
+                <p id="weeklyReviewConclusion" class="weekly-review-conclusion">
+                    記録が増えると、週間レビューを表示します。
+                </p>
+            </div>
+
+            <div class="weekly-review-grid">
+                <div class="weekly-review-box">
+                    <h3>良かった点</h3>
+                    <ul id="weeklyReviewGoodList">
+                        <li>未計算</li>
+                    </ul>
+                </div>
+
+                <div class="weekly-review-box">
+                    <h3>崩れた点</h3>
+                    <ul id="weeklyReviewProblemList">
+                        <li>未計算</li>
+                    </ul>
+                </div>
+
+                <div class="weekly-review-box">
+                    <h3>来週の方針</h3>
+                    <ul id="weeklyReviewNextActionList">
+                        <li>未計算</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="weekly-review-metrics">
+                <div class="summary-box">
+                    <span class="summary-label">記録日数</span>
+                    <span id="weeklyReviewRecordDays" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">習慣達成率</span>
+                    <span id="weeklyReviewHabitRate" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">取り組み日数</span>
+                    <span id="weeklyReviewStudyDays" class="summary-value">未計算</span>
+                </div>
+            </div>
         </section>
 
         <section class="card correlation-card">
@@ -236,25 +323,25 @@
 
             <div class="summary-grid">
                 <div class="summary-box">
-                    <span class="summary-label">直近7日 上位項目</span>
+                    <span class="summary-label">直近7日 上位親項目</span>
                     <span id="topSubject7" class="summary-value">未計算</span>
                 </div>
 
                 <div class="summary-box">
-                    <span class="summary-label">直近30日 上位項目</span>
+                    <span class="summary-label">直近30日 上位親項目</span>
                     <span id="topSubject30" class="summary-value">未計算</span>
                 </div>
             </div>
 
             <div class="ranking-box">
-                <h3>直近7日の項目別時間</h3>
+                <h3>直近7日の親項目別時間</h3>
                 <div id="subjectAnalysis7" class="subject-analysis-list">
                     <p class="empty">未計算</p>
                 </div>
             </div>
 
             <div class="ranking-box">
-                <h3>直近30日の項目別時間</h3>
+                <h3>直近30日の親項目別時間</h3>
                 <div id="subjectAnalysis30" class="subject-analysis-list">
                     <p class="empty">未計算</p>
                 </div>
@@ -264,6 +351,47 @@
                 <span class="summary-label">項目別コメント</span>
                 <p id="subjectAnalysisComment" class="item-warning-text">
                     記録が増えると、取り組みの偏りを表示します。
+                </p>
+            </div>
+        </section>
+
+        <section class="card subitem-analysis-card">
+            <h2>📘 子項目・教材別分析</h2>
+
+            <p class="hint">
+                親項目の下に設定した教材名・内容名ごとの取り組み時間を確認します。
+            </p>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">直近7日 上位子項目</span>
+                    <span id="topSubSubject7" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">直近30日 上位子項目</span>
+                    <span id="topSubSubject30" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近7日の子項目別時間</h3>
+                <div id="subSubjectAnalysis7" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近30日の子項目別時間</h3>
+                <div id="subSubjectAnalysis30" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="item-warning-box">
+                <span class="summary-label">子項目コメント</span>
+                <p id="subSubjectAnalysisComment" class="item-warning-text">
+                    記録が増えると、教材・内容ごとの偏りを表示します。
                 </p>
             </div>
         </section>
@@ -338,6 +466,14 @@
                     <span>
                         <strong>目標達成・学習計画相談</strong>
                         <small>設定した目標に向けた現実的な計画を相談する</small>
+                    </span>
+                </label>
+
+                <label class="consult-type-option">
+                    <input type="radio" name="consultType" value="weekly">
+                    <span>
+                        <strong>週間レビュー相談</strong>
+                        <small>今週の良かった点・崩れた点・来週の方針を相談する</small>
                     </span>
                 </label>
             </div>
@@ -725,7 +861,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>Life Growth Analyzer v6.0</p>
+        <p>Life Growth Analyzer v6.5</p>
     </footer>
 
     <script src="script.js"></script>

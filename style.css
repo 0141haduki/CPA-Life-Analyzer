@@ -1,4 +1,4 @@
-/* Life Growth Analyzer v6.0 */
+/* Life Growth Analyzer v6.5 */
 
 * {
     box-sizing: border-box;
@@ -91,6 +91,17 @@ textarea {
     resize: vertical;
 }
 
+.hint {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.empty {
+    margin: 0;
+    color: #6b7280;
+}
+
 /* 今日のアドバイス */
 .advice-card {
     border-left: 5px solid #14b8a6;
@@ -137,6 +148,41 @@ textarea {
     background: #f0fdf4;
 }
 
+.habit-today-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.habit-filter-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.habit-filter-button {
+    padding: 10px 8px;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    background: white;
+    color: #166534;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.habit-filter-button:hover {
+    background: #dcfce7;
+}
+
+.habit-filter-button.active {
+    background: #16a34a;
+    color: white;
+    border-color: #16a34a;
+}
+
 .today-habit-list {
     display: flex;
     flex-direction: column;
@@ -149,6 +195,21 @@ textarea {
     border: 1px solid #bbf7d0;
     border-radius: 14px;
     background: white;
+}
+
+.today-habit-item.done {
+    border-left: 6px solid #16a34a;
+    background: #f0fdf4;
+}
+
+.today-habit-item.pending {
+    border-left: 6px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.today-habit-item.failed {
+    border-left: 6px solid #dc2626;
+    background: #fef2f2;
 }
 
 .today-habit-header {
@@ -186,6 +247,24 @@ textarea {
     font-size: 14px;
     font-weight: 700;
     color: #334155;
+}
+
+.today-habit-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.habit-meta-pill {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
 }
 
 .habit-button-row {
@@ -228,7 +307,8 @@ textarea {
 }
 
 .detection-conclusion-box,
-.correlation-insight-box {
+.correlation-insight-box,
+.weekly-review-conclusion-box {
     margin-top: 14px;
     padding: 14px;
     border: 1px solid #fed7aa;
@@ -328,6 +408,62 @@ textarea {
     font-size: 13px;
     font-weight: 700;
     color: #475569;
+}
+
+/* 週間レビュー */
+.weekly-review-card {
+    border-left: 5px solid #0ea5e9;
+    background: #eff6ff;
+}
+
+.weekly-review-conclusion-box {
+    border-color: #bfdbfe;
+}
+
+.weekly-review-conclusion {
+    margin: 4px 0 0;
+    font-size: 17px;
+    font-weight: 900;
+    color: #1d4ed8;
+}
+
+.weekly-review-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.weekly-review-box {
+    padding: 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: white;
+}
+
+.weekly-review-box h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #1e3a8a;
+}
+
+.weekly-review-box ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.weekly-review-box li {
+    margin-bottom: 6px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.weekly-review-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
 }
 
 /* 相関分析 */
@@ -671,10 +807,44 @@ textarea {
     font-weight: 700;
 }
 
+.habit-effect-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.habit-effect-item {
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.habit-effect-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 900;
+    color: #365314;
+}
+
+.habit-effect-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+}
+
 /* 項目別分析 */
 .item-analysis-card {
     border-left: 5px solid #0f766e;
     background: #f0fdfa;
+}
+
+.subitem-analysis-card {
+    border-left: 5px solid #0369a1;
+    background: #eff6ff;
 }
 
 .subject-analysis-list {
@@ -944,7 +1114,6 @@ textarea {
     border-left: 5px solid #0f766e;
 }
 
-/* 予定達成分析 */
 .achievement-card {
     border-left: 5px solid #9333ea;
 }
@@ -988,12 +1157,6 @@ textarea {
 
 .summary-value.danger {
     color: #b91c1c;
-}
-
-.hint {
-    margin: 12px 0 0;
-    font-size: 13px;
-    color: #64748b;
 }
 
 /* グラフ */
@@ -1328,11 +1491,6 @@ textarea {
     font-weight: 700;
 }
 
-.empty {
-    margin: 0;
-    color: #6b7280;
-}
-
 .app-footer {
     text-align: center;
     padding: 24px 16px;
@@ -1351,8 +1509,14 @@ textarea {
 
     .detection-summary,
     .correlation-summary,
-    .habit-analysis-grid {
+    .habit-analysis-grid,
+    .weekly-review-metrics,
+    .habit-today-summary {
         grid-template-columns: 1fr;
+    }
+
+    .habit-filter-tabs {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .subject-setting-main,

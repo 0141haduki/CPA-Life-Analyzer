@@ -1,6 +1,6 @@
-// Life Growth Analyzer v6.0
+// Life Growth Analyzer v6.5
 
-console.log("Life Growth Analyzer v6.0 起動");
+console.log("Life Growth Analyzer v6.5 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -15,71 +15,23 @@ const HABITS_KEY = "LIFE_GROWTH_ANALYZER_HABITS_V1";
 const HABIT_RECORDS_KEY = "LIFE_GROWTH_ANALYZER_HABIT_RECORDS_V1";
 
 const defaultSubjectConfigs = [
-    {
-        name: "財務会計論",
-        subSubjects: ["テキスト", "問題集", "短答問題集", "理論", "計算"]
-    },
-    {
-        name: "管理会計論",
-        subSubjects: ["テキスト", "問題集", "短答問題集"]
-    },
-    {
-        name: "監査論",
-        subSubjects: ["テキスト", "短答問題集", "論文対策"]
-    },
-    {
-        name: "企業法",
-        subSubjects: ["テキスト", "短答問題集", "論文対策"]
-    },
-    {
-        name: "租税法",
-        subSubjects: ["テキスト", "問題集"]
-    },
-    {
-        name: "経営学",
-        subSubjects: ["テキスト", "問題集"]
-    },
-    {
-        name: "英語",
-        subSubjects: ["単語", "リスニング", "BBC", "TOEIC"]
-    },
-    {
-        name: "読書",
-        subSubjects: []
-    },
-    {
-        name: "プログラミング",
-        subSubjects: []
-    },
-    {
-        name: "生活改善",
-        subSubjects: []
-    },
-    {
-        name: "その他",
-        subSubjects: []
-    }
+    { name: "財務会計論", subSubjects: ["テキスト", "問題集", "短答問題集", "理論", "計算"] },
+    { name: "管理会計論", subSubjects: ["テキスト", "問題集", "短答問題集"] },
+    { name: "監査論", subSubjects: ["テキスト", "短答問題集", "論文対策"] },
+    { name: "企業法", subSubjects: ["テキスト", "短答問題集", "論文対策"] },
+    { name: "租税法", subSubjects: ["テキスト", "問題集"] },
+    { name: "経営学", subSubjects: ["テキスト", "問題集"] },
+    { name: "英語", subSubjects: ["単語", "リスニング", "BBC", "TOEIC"] },
+    { name: "読書", subSubjects: [] },
+    { name: "プログラミング", subSubjects: [] },
+    { name: "生活改善", subSubjects: [] },
+    { name: "その他", subSubjects: [] }
 ];
 
 const defaultHabits = [
-    {
-        id: "habit_newspaper",
-        name: "新聞",
-        type: "action",
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: "habit_cleaning",
-        name: "掃除",
-        type: "action",
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: "habit_abstinence",
-        name: "禁欲",
-        type: "avoid",
-        createdAt: new Date().toISOString()
-    }
+    { id: "habit_newspaper", name: "新聞", type: "action", createdAt: new Date().toISOString() },
+    { id: "habit_cleaning", name: "掃除", type: "action", createdAt: new Date().toISOString() },
+    { id: "habit_abstinence", name: "禁欲", type: "avoid", createdAt: new Date().toISOString() }
 ];
 
 const fieldIds = [
@@ -110,6 +62,7 @@ const ratingFields = [
 let currentDate = "";
 let historyFilter = "7";
 let activeConditionChartKey = "";
+let habitFilter = "all";
 
 // ==============================
 // 共通
@@ -121,9 +74,25 @@ function $(id) {
 
 function setText(id, text) {
     const element = $(id);
-
     if (element) {
         element.textContent = text;
+    }
+}
+
+function cloneData(data) {
+    return JSON.parse(JSON.stringify(data));
+}
+
+function safeJsonParse(text, fallback) {
+    if (!text) {
+        return fallback;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("JSON読み込み失敗", error);
+        return fallback;
     }
 }
 
@@ -203,19 +172,6 @@ function getRecentDates(days) {
     return dates;
 }
 
-function safeJsonParse(text, fallback) {
-    if (!text) {
-        return fallback;
-    }
-
-    try {
-        return JSON.parse(text);
-    } catch (error) {
-        console.error("JSON読み込み失敗", error);
-        return fallback;
-    }
-}
-
 function getNumberOrNull(valueText) {
     if (valueText === "" || valueText === undefined || valueText === null) {
         return null;
@@ -263,7 +219,7 @@ function valueOrDash(value) {
 }
 
 // ==============================
-// ストレージ
+// 基本ストレージ
 // ==============================
 
 function getRecords() {
@@ -514,22 +470,15 @@ function setSummaryClass(element, value, type) {
 // ==============================
 
 function normalizeSubjectConfigs(raw) {
-    if (!Array.isArray(raw)) {
-        return structuredClone(defaultSubjectConfigs);
-    }
-
-    if (raw.length === 0) {
-        return structuredClone(defaultSubjectConfigs);
+    if (!Array.isArray(raw) || raw.length === 0) {
+        return cloneData(defaultSubjectConfigs);
     }
 
     if (typeof raw[0] === "string") {
         return raw
             .map(name => String(name).trim())
             .filter(name => name !== "")
-            .map(name => ({
-                name,
-                subSubjects: []
-            }));
+            .map(name => ({ name, subSubjects: [] }));
     }
 
     return raw
@@ -571,12 +520,11 @@ function getSubjectConfigs() {
         return migrated;
     }
 
-    return structuredClone(defaultSubjectConfigs);
+    return cloneData(defaultSubjectConfigs);
 }
 
 function setSubjectConfigs(configs) {
-    const normalized = normalizeSubjectConfigs(configs);
-    localStorage.setItem(SUBJECTS_KEY, JSON.stringify(normalized));
+    localStorage.setItem(SUBJECTS_KEY, JSON.stringify(normalizeSubjectConfigs(configs)));
 }
 
 function getSubjectNames() {
@@ -700,10 +648,7 @@ function loadSubjectsToUI() {
         }
 
         if (record.mainSubject && !configs.some(item => item.name === record.mainSubject)) {
-            configs.push({
-                name: record.mainSubject,
-                subSubjects: []
-            });
+            configs.push({ name: record.mainSubject, subSubjects: [] });
         }
 
         if (record.mainSubject && record.subSubject) {
@@ -717,11 +662,8 @@ function loadSubjectsToUI() {
 
     setSubjectConfigs(configs);
 
-    const currentSubject = $("mainSubject")?.value || "";
-    const currentSub = $("subSubject")?.value || "";
-
-    updateSubjectSelectOptions(currentSubject);
-    updateSubSubjectSelectOptions(currentSub);
+    updateSubjectSelectOptions($("mainSubject")?.value || "");
+    updateSubSubjectSelectOptions($("subSubject")?.value || "");
     updateGoalPriorityOptions(getGoal().priorityItem);
     renderSubjectSettingsList();
 }
@@ -747,16 +689,13 @@ function addSubject() {
         return;
     }
 
-    configs.push({
-        name,
-        subSubjects: []
-    });
-
+    configs.push({ name, subSubjects: [] });
     setSubjectConfigs(configs);
     input.value = "";
 
     loadSubjectsToUI();
     updateSubjectAnalysis();
+    updateSubSubjectAnalysis();
     updateSaveStatus(`親項目を追加しました：${name}`, false);
 }
 
@@ -783,12 +722,11 @@ function deleteSubject(subjectName) {
 
     loadSubjectsToUI();
     updateSubjectAnalysis();
+    updateSubSubjectAnalysis();
     updateSaveStatus(`親項目を削除しました：${subjectName}`, false);
 }
 
-function addSubSubject(parentName) {
-    const input = document.querySelector(`input[data-sub-input="${CSS.escape(parentName)}"]`);
-
+function addSubSubject(parentName, input) {
     if (!input) {
         return;
     }
@@ -814,14 +752,15 @@ function addSubSubject(parentName) {
 
     parent.subSubjects.push(subName);
     setSubjectConfigs(configs);
-
     input.value = "";
+
     loadSubjectsToUI();
 
     if ($("mainSubject")?.value === parentName) {
         updateSubSubjectSelectOptions($("subSubject")?.value || "");
     }
 
+    updateSubSubjectAnalysis();
     updateSaveStatus(`子項目を追加しました：${parentName} / ${subName}`, false);
 }
 
@@ -847,7 +786,7 @@ function deleteSubSubject(parentName, subName) {
     }
 
     loadSubjectsToUI();
-    updateSubjectAnalysis();
+    updateSubSubjectAnalysis();
     updateSaveStatus(`子項目を削除しました：${parentName} / ${subName}`, false);
 }
 
@@ -859,7 +798,6 @@ function renderSubjectSettingsList() {
     }
 
     const configs = getSubjectConfigs();
-
     list.innerHTML = "";
 
     if (configs.length === 0) {
@@ -874,52 +812,84 @@ function renderSubjectSettingsList() {
         const item = document.createElement("div");
         item.className = "subject-setting-item";
 
-        const subItems = config.subSubjects.length === 0
-            ? `<p class="empty">子項目は未設定です。</p>`
-            : config.subSubjects.map(sub => `
-                <div class="subsubject-item">
-                    <span class="subsubject-name">${sub}</span>
-                    <button type="button" class="subsubject-delete-button" data-parent="${config.name}" data-sub="${sub}">削除</button>
-                </div>
-            `).join("");
+        const main = document.createElement("div");
+        main.className = "subject-setting-main";
 
-        item.innerHTML = `
-            <div class="subject-setting-main">
-                <span class="subject-setting-name">${config.name}</span>
-                <button type="button" class="subject-delete-button" data-subject="${config.name}">親項目を削除</button>
-            </div>
+        const name = document.createElement("span");
+        name.className = "subject-setting-name";
+        name.textContent = config.name;
 
-            <div class="subsubject-box">
-                <div class="subsubject-list">
-                    ${subItems}
-                </div>
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "subject-delete-button";
+        deleteButton.textContent = "親項目を削除";
+        deleteButton.addEventListener("click", () => deleteSubject(config.name));
 
-                <div class="subsubject-input-row">
-                    <input type="text" data-sub-input="${config.name}" placeholder="例：テキスト、問題集、新聞記事名">
-                    <button type="button" class="subsubject-add-button" data-parent="${config.name}">子項目追加</button>
-                </div>
-            </div>
-        `;
+        main.appendChild(name);
+        main.appendChild(deleteButton);
+
+        const subBox = document.createElement("div");
+        subBox.className = "subsubject-box";
+
+        const subList = document.createElement("div");
+        subList.className = "subsubject-list";
+
+        if (config.subSubjects.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "empty";
+            empty.textContent = "子項目は未設定です。";
+            subList.appendChild(empty);
+        } else {
+            config.subSubjects.forEach(sub => {
+                const subItem = document.createElement("div");
+                subItem.className = "subsubject-item";
+
+                const subName = document.createElement("span");
+                subName.className = "subsubject-name";
+                subName.textContent = sub;
+
+                const subDelete = document.createElement("button");
+                subDelete.type = "button";
+                subDelete.className = "subsubject-delete-button";
+                subDelete.textContent = "削除";
+                subDelete.addEventListener("click", () => deleteSubSubject(config.name, sub));
+
+                subItem.appendChild(subName);
+                subItem.appendChild(subDelete);
+                subList.appendChild(subItem);
+            });
+        }
+
+        const inputRow = document.createElement("div");
+        inputRow.className = "subsubject-input-row";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "例：テキスト、問題集、新聞記事名";
+
+        const addButton = document.createElement("button");
+        addButton.type = "button";
+        addButton.className = "subsubject-add-button";
+        addButton.textContent = "子項目追加";
+        addButton.addEventListener("click", () => addSubSubject(config.name, input));
+
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addSubSubject(config.name, input);
+            }
+        });
+
+        inputRow.appendChild(input);
+        inputRow.appendChild(addButton);
+
+        subBox.appendChild(subList);
+        subBox.appendChild(inputRow);
+
+        item.appendChild(main);
+        item.appendChild(subBox);
 
         list.appendChild(item);
-    });
-
-    list.querySelectorAll(".subject-delete-button").forEach(button => {
-        button.addEventListener("click", () => {
-            deleteSubject(button.dataset.subject);
-        });
-    });
-
-    list.querySelectorAll(".subsubject-add-button").forEach(button => {
-        button.addEventListener("click", () => {
-            addSubSubject(button.dataset.parent);
-        });
-    });
-
-    list.querySelectorAll(".subsubject-delete-button").forEach(button => {
-        button.addEventListener("click", () => {
-            deleteSubSubject(button.dataset.parent, button.dataset.sub);
-        });
     });
 }
 
@@ -958,7 +928,7 @@ function createHabitId(name) {
 
 function normalizeHabits(raw) {
     if (!Array.isArray(raw)) {
-        return structuredClone(defaultHabits);
+        return cloneData(defaultHabits);
     }
 
     const cleaned = raw
@@ -982,7 +952,7 @@ function normalizeHabits(raw) {
         })
         .filter(Boolean);
 
-    return cleaned.length > 0 ? cleaned : structuredClone(defaultHabits);
+    return cleaned.length > 0 ? cleaned : cloneData(defaultHabits);
 }
 
 function getHabits() {
@@ -1049,6 +1019,20 @@ function getHabitResult(date, habitId) {
     }
 
     return dayRecord[habitId].result === true;
+}
+
+function getHabitState(date, habitId) {
+    const result = getHabitResult(date, habitId);
+
+    if (result === true) {
+        return "done";
+    }
+
+    if (result === false) {
+        return "failed";
+    }
+
+    return "pending";
 }
 
 function getHabitStreakUntil(date, habitId) {
@@ -1131,6 +1115,47 @@ function getHabitStatusText(habit, date) {
     return "まだ達成記録がありません。今日が初回です。";
 }
 
+function getHabitAchievementCount(date) {
+    const habits = getHabits();
+    return habits.filter(habit => getHabitResult(date, habit.id) === true).length;
+}
+
+function getHabitPendingCount(date) {
+    const habits = getHabits();
+    return habits.filter(habit => getHabitResult(date, habit.id) === null).length;
+}
+
+function getHabitFailureCount(date) {
+    const habits = getHabits();
+    return habits.filter(habit => getHabitResult(date, habit.id) === false).length;
+}
+
+function updateHabitTodaySummary(date) {
+    const habits = getHabits();
+    const done = getHabitAchievementCount(date);
+    const pending = getHabitPendingCount(date);
+
+    let topStreak = 0;
+
+    habits.forEach(habit => {
+        topStreak = Math.max(topStreak, getHabitStreakUntil(date, habit.id));
+    });
+
+    setText("habitTodayDoneCount", `${done}件`);
+    setText("habitTodayPendingCount", `${pending}件`);
+    setText("habitTodayTopStreak", topStreak > 0 ? `${topStreak}日` : "なし");
+}
+
+function shouldShowHabitByFilter(date, habit) {
+    const state = getHabitState(date, habit.id);
+
+    if (habitFilter === "all") {
+        return true;
+    }
+
+    return state === habitFilter;
+}
+
 function renderTodayHabitList() {
     const list = $("todayHabitList");
 
@@ -1141,7 +1166,11 @@ function renderTodayHabitList() {
     const date = $("recordDate")?.value || getTodayString();
     const habits = getHabits();
 
+    updateHabitTodaySummary(date);
+
     list.innerHTML = "";
+
+    const visibleHabits = habits.filter(habit => shouldShowHabitByFilter(date, habit));
 
     if (habits.length === 0) {
         const empty = document.createElement("p");
@@ -1151,14 +1180,26 @@ function renderTodayHabitList() {
         return;
     }
 
-    habits.forEach(habit => {
+    if (visibleHabits.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "この条件に当てはまる継続項目はありません。";
+        list.appendChild(empty);
+        return;
+    }
+
+    visibleHabits.forEach(habit => {
         const result = getHabitResult(date, habit.id);
+        const state = getHabitState(date, habit.id);
         const item = document.createElement("div");
-        item.className = "today-habit-item";
+        item.className = `today-habit-item ${state}`;
 
         const label = getHabitButtonLabel(habit, date);
         const typeText = habit.type === "avoid" ? "回避型" : "実行型";
         const typeClass = habit.type === "avoid" ? "avoid" : "action";
+        const streak = getHabitStreakUntil(date, habit.id);
+        const rate7 = getHabitAchievementRate(habit.id, 7);
+        const rate30 = getHabitAchievementRate(habit.id, 30);
 
         const secondaryButton = result === true
             ? `<button type="button" class="habit-action-button break" data-habit-clear="${habit.id}">取消</button>`
@@ -1173,6 +1214,12 @@ function renderTodayHabitList() {
             </div>
 
             <p class="today-habit-status">${getHabitStatusText(habit, date)}</p>
+
+            <div class="today-habit-meta">
+                <span class="habit-meta-pill">現在${streak}日</span>
+                <span class="habit-meta-pill">7日${rate7.rate.toFixed(0)}%</span>
+                <span class="habit-meta-pill">30日${rate30.rate.toFixed(0)}%</span>
+            </div>
 
             <div class="habit-button-row">
                 <button type="button" class="habit-action-button ${result === true ? "done" : ""}" data-habit-success="${habit.id}">
@@ -1241,13 +1288,12 @@ function addHabit() {
     });
 
     setHabits(habits);
-
     nameInput.value = "";
 
     renderHabitSettingsList();
     renderTodayHabitList();
     updateHabitAnalysis();
-
+    updateWeeklyReview();
     updateSaveStatus(`継続項目を追加しました：${name}`, false);
 }
 
@@ -1270,6 +1316,7 @@ function deleteHabit(habitId) {
     renderHabitSettingsList();
     renderTodayHabitList();
     updateHabitAnalysis();
+    updateWeeklyReview();
     updateSaveStatus(`継続項目を削除しました：${habit.name}`, false);
 }
 
@@ -1281,7 +1328,6 @@ function renderHabitSettingsList() {
     }
 
     const habits = getHabits();
-
     list.innerHTML = "";
 
     if (habits.length === 0) {
@@ -1334,6 +1380,19 @@ function setupHabitEvents() {
             }
         });
     }
+
+    document.querySelectorAll(".habit-filter-button").forEach(button => {
+        button.addEventListener("click", () => {
+            habitFilter = button.dataset.habitFilter || "all";
+
+            document.querySelectorAll(".habit-filter-button").forEach(item => {
+                item.classList.remove("active");
+            });
+
+            button.classList.add("active");
+            renderTodayHabitList();
+        });
+    });
 }
 
 // ==============================
@@ -1469,8 +1528,10 @@ function updateAfterDataChange() {
     updateAutoAlerts();
     updateCorrelationAnalysis();
     updateSubjectAnalysis();
+    updateSubSubjectAnalysis();
     renderTodayHabitList();
     updateHabitAnalysis();
+    updateWeeklyReview();
 }
 
 function updateSaveStatus(message, hasWarning) {
@@ -1575,7 +1636,9 @@ function saveGoalFromForm() {
     setGoal(goal);
     updateGoalStatus();
     updateSubjectAnalysis();
+    updateSubSubjectAnalysis();
     updateAutoAlerts();
+    updateWeeklyReview();
     updateSaveStatus("目標設定を保存しました", false);
     window.alert("目標設定を保存しました。");
 }
@@ -1902,11 +1965,6 @@ function updateAllCalculatedDisplays() {
 // 習慣分析
 // ==============================
 
-function getHabitAchievementCount(date) {
-    const habits = getHabits();
-    return habits.filter(habit => getHabitResult(date, habit.id) === true).length;
-}
-
 function getHabitAchievementRate(habitId, days) {
     const dates = getRecentDates(days);
     let achieved = 0;
@@ -1931,16 +1989,17 @@ function getHabitAchievementRate(habitId, days) {
     };
 }
 
-function getHabitEffectText(habit) {
+function getHabitEffectStats(habit) {
     const dates = getRecentDates(30);
     const records = getRecords();
 
-    const achievedFocus = [];
-    const notAchievedFocus = [];
-    const achievedMood = [];
-    const notAchievedMood = [];
-    const achievedSleep = [];
-    const notAchievedSleep = [];
+    const data = {
+        focus: { done: [], failed: [], label: "集中力", suffix: "" },
+        mood: { done: [], failed: [], label: "気分", suffix: "" },
+        fatigue: { done: [], failed: [], label: "疲労", suffix: "" },
+        sleepHours: { done: [], failed: [], label: "睡眠", suffix: "h" },
+        studyTotal: { done: [], failed: [], label: "取り組み時間", suffix: "分" }
+    };
 
     dates.forEach(date => {
         const record = records[date];
@@ -1950,47 +2009,84 @@ function getHabitEffectText(habit) {
         }
 
         const result = getHabitResult(date, habit.id);
+
+        if (result === null) {
+            return;
+        }
+
+        const bucket = result === true ? "done" : "failed";
+
         const focus = getNumberOrNull(record.focus);
         const mood = getNumberOrNull(record.mood);
-        const sleep = getNumberOrNull(record.sleepHours);
+        const fatigue = getNumberOrNull(record.fatigue);
+        const sleepHours = getNumberOrNull(record.sleepHours);
+        const studyTotal = getNumberOrNull(record.studyTotal);
 
-        if (result === true) {
-            if (focus !== null) achievedFocus.push(focus);
-            if (mood !== null) achievedMood.push(mood);
-            if (sleep !== null) achievedSleep.push(sleep);
-        } else if (result === false) {
-            if (focus !== null) notAchievedFocus.push(focus);
-            if (mood !== null) notAchievedMood.push(mood);
-            if (sleep !== null) notAchievedSleep.push(sleep);
-        }
+        if (focus !== null) data.focus[bucket].push(focus);
+        if (mood !== null) data.mood[bucket].push(mood);
+        if (fatigue !== null) data.fatigue[bucket].push(fatigue);
+        if (sleepHours !== null) data.sleepHours[bucket].push(sleepHours);
+        if (studyTotal !== null) data.studyTotal[bucket].push(studyTotal);
     });
 
-    const focusA = averageNumber(achievedFocus);
-    const focusN = averageNumber(notAchievedFocus);
-    const moodA = averageNumber(achievedMood);
-    const moodN = averageNumber(notAchievedMood);
-    const sleepA = averageNumber(achievedSleep);
-    const sleepN = averageNumber(notAchievedSleep);
+    return data;
+}
 
+function buildHabitEffectComment(habit) {
+    const stats = getHabitEffectStats(habit);
     const comments = [];
 
-    if (focusA !== null && focusN !== null && achievedFocus.length >= 3 && notAchievedFocus.length >= 3) {
-        comments.push(`達成日の平均集中力 ${focusA.toFixed(1)} / 未達成日 ${focusN.toFixed(1)}`);
-    }
+    Object.values(stats).forEach(item => {
+        const doneAvg = averageNumber(item.done);
+        const failedAvg = averageNumber(item.failed);
 
-    if (moodA !== null && moodN !== null && achievedMood.length >= 3 && notAchievedMood.length >= 3) {
-        comments.push(`達成日の平均気分 ${moodA.toFixed(1)} / 未達成日 ${moodN.toFixed(1)}`);
-    }
-
-    if (sleepA !== null && sleepN !== null && achievedSleep.length >= 3 && notAchievedSleep.length >= 3) {
-        comments.push(`達成日の平均睡眠 ${sleepA.toFixed(1)}h / 未達成日 ${sleepN.toFixed(1)}h`);
-    }
+        if (doneAvg !== null && failedAvg !== null && item.done.length >= 3 && item.failed.length >= 3) {
+            comments.push(`達成日の平均${item.label} ${doneAvg.toFixed(1)}${item.suffix} / 未達成日 ${failedAvg.toFixed(1)}${item.suffix}`);
+        }
+    });
 
     if (comments.length === 0) {
         return "影響分析には、達成日と未達成日の体調記録がもう少し必要です。";
     }
 
     return comments.join("。");
+}
+
+function renderHabitEffectGrid(habit) {
+    const stats = getHabitEffectStats(habit);
+    const targets = [
+        stats.sleepHours,
+        stats.mood,
+        stats.focus,
+        stats.fatigue,
+        stats.studyTotal
+    ];
+
+    const items = targets.map(item => {
+        const doneAvg = averageNumber(item.done);
+        const failedAvg = averageNumber(item.failed);
+
+        if (doneAvg === null || failedAvg === null || item.done.length < 3 || item.failed.length < 3) {
+            return `
+                <div class="habit-effect-item">
+                    <span class="habit-effect-title">${item.label}</span>
+                    <span class="habit-effect-detail">比較には達成日・未達成日が各3件以上必要</span>
+                </div>
+            `;
+        }
+
+        const diff = doneAvg - failedAvg;
+        const sign = diff >= 0 ? "+" : "";
+
+        return `
+            <div class="habit-effect-item">
+                <span class="habit-effect-title">${item.label}</span>
+                <span class="habit-effect-detail">達成日 ${doneAvg.toFixed(1)}${item.suffix} / 未達成日 ${failedAvg.toFixed(1)}${item.suffix} / 差 ${sign}${diff.toFixed(1)}</span>
+            </div>
+        `;
+    });
+
+    return `<div class="habit-effect-grid">${items.join("")}</div>`;
 }
 
 function updateHabitAnalysis() {
@@ -2051,7 +2147,8 @@ function updateHabitAnalysis() {
                     <span class="habit-metric-value">${rate30.rate.toFixed(0)}%</span>
                 </div>
             </div>
-            <p class="habit-effect-text">${getHabitEffectText(habit)}</p>
+            <p class="habit-effect-text">${buildHabitEffectComment(habit)}</p>
+            ${renderHabitEffectGrid(habit)}
         `;
 
         list.appendChild(item);
@@ -2404,7 +2501,7 @@ function updateAutoAlerts() {
 }
 
 // ==============================
-// 項目別分析
+// 項目別・子項目別分析
 // ==============================
 
 function buildSubjectStats(days) {
@@ -2443,6 +2540,44 @@ function buildSubjectStats(days) {
         .sort((a, b) => b.minutes - a.minutes);
 
     return { days, totalMinutes, recordedDays, items };
+}
+
+function buildSubSubjectStats(days) {
+    const records = getRecords();
+    const dates = getRecentDates(days);
+    const subMap = {};
+    let totalMinutes = 0;
+
+    dates.forEach(date => {
+        const record = records[date];
+
+        if (!record) {
+            return;
+        }
+
+        const minutes = getNumberOrNull(record.studyTotal);
+
+        if (minutes === null || minutes <= 0) {
+            return;
+        }
+
+        const parent = record.mainSubject || "未選択";
+        const sub = record.subSubject || "子項目未選択";
+        const key = `${parent} / ${sub}`;
+
+        totalMinutes += minutes;
+        subMap[key] = (subMap[key] || 0) + minutes;
+    });
+
+    const items = Object.entries(subMap)
+        .map(([subject, minutes]) => ({
+            subject,
+            minutes,
+            percent: totalMinutes > 0 ? minutes / totalMinutes * 100 : 0
+        }))
+        .sort((a, b) => b.minutes - a.minutes);
+
+    return { days, totalMinutes, items };
 }
 
 function renderSubjectAnalysisList(containerId, stats) {
@@ -2523,11 +2658,43 @@ function updateSubjectAnalysis() {
         return;
     }
 
-    comment.textContent = "項目別の取り組みは大きな偏りが少ない状態です。目標の優先項目に触れられているかを確認してください。";
+    comment.textContent = "親項目別の取り組みは大きな偏りが少ない状態です。目標の優先項目に触れられているかを確認してください。";
+}
+
+function updateSubSubjectAnalysis() {
+    const stats7 = buildSubSubjectStats(7);
+    const stats30 = buildSubSubjectStats(30);
+
+    const top7 = stats7.items[0];
+    const top30 = stats30.items[0];
+
+    setText("topSubSubject7", top7 ? top7.subject : "未計算");
+    setText("topSubSubject30", top30 ? top30.subject : "未計算");
+
+    renderSubjectAnalysisList("subSubjectAnalysis7", stats7);
+    renderSubjectAnalysisList("subSubjectAnalysis30", stats30);
+
+    const comment = $("subSubjectAnalysisComment");
+
+    if (!comment) {
+        return;
+    }
+
+    if (stats7.items.length === 0) {
+        comment.textContent = "まだ子項目・教材別に分析できる記録がありません。親項目と子項目を選んで記録してください。";
+        return;
+    }
+
+    if (top7 && top7.percent >= 70) {
+        comment.textContent = `直近7日は「${top7.subject}」に集中しています。意図的な集中なら有効ですが、他の教材が止まっていないか確認してください。`;
+        return;
+    }
+
+    comment.textContent = "子項目・教材別の偏りは大きすぎません。重点教材と復習教材の配分を確認してください。";
 }
 
 // ==============================
-// サマリー
+// サマリー・週間レビュー
 // ==============================
 
 function buildPeriodStats(records, dates) {
@@ -2697,6 +2864,184 @@ function updateAchievementSummary() {
     }
 }
 
+function getWeeklyHabitRate() {
+    const habits = getHabits();
+
+    if (habits.length === 0) {
+        return null;
+    }
+
+    const dates = getRecentDates(7);
+    let achieved = 0;
+    let total = habits.length * dates.length;
+
+    dates.forEach(date => {
+        habits.forEach(habit => {
+            if (getHabitResult(date, habit.id) === true) {
+                achieved += 1;
+            }
+        });
+    });
+
+    return total === 0 ? null : achieved / total * 100;
+}
+
+function buildWeeklyReviewData() {
+    const records = getRecords();
+    const dates = getRecentDates(7);
+    const stats = buildPeriodStats(records, dates);
+    const habitRate = getWeeklyHabitRate();
+    const goal = getGoal();
+
+    const good = [];
+    const problems = [];
+    const nextActions = [];
+
+    const avgSleep = averageNumber(stats.sleepValues);
+    const avgFocus = averageNumber(stats.focusValues);
+    const avgFatigue = averageNumber(stats.fatigueValues);
+
+    if (stats.recordDays >= 5) {
+        good.push(`7日中${stats.recordDays}日記録できています。記録習慣は維持できています。`);
+    } else {
+        problems.push(`記録日数が${stats.recordDays}/7日です。まず記録の欠けを減らす必要があります。`);
+        nextActions.push("来週は毎日すべて入力しようとせず、睡眠時間・疲労・継続項目だけでも記録してください。");
+    }
+
+    if (avgSleep !== null && avgSleep >= 6.5) {
+        good.push(`平均実睡眠は${avgSleep.toFixed(1)}時間で、最低限の回復は確保できています。`);
+    } else if (avgSleep !== null) {
+        problems.push(`平均実睡眠は${avgSleep.toFixed(1)}時間で、回復不足寄りです。`);
+        nextActions.push("来週は取り組み量より、睡眠予定を守ることを優先してください。");
+    }
+
+    if (stats.studyDays >= 5) {
+        good.push(`取り組み記録が${stats.studyDays}日あり、行動の継続はできています。`);
+    } else {
+        problems.push(`取り組み日数は${stats.studyDays}日です。継続リズムが弱くなっています。`);
+        nextActions.push("来週は5〜15分の最低ラインを固定してください。");
+    }
+
+    if (habitRate !== null && habitRate >= 70) {
+        good.push(`継続項目の達成率は${habitRate.toFixed(0)}%です。小さい習慣は比較的維持できています。`);
+    } else if (habitRate !== null) {
+        problems.push(`継続項目の達成率は${habitRate.toFixed(0)}%です。習慣の抜けが目立ちます。`);
+        nextActions.push("来週は継続項目を全部やるのではなく、最重要の1つを落とさない方針にしてください。");
+    }
+
+    if (avgFocus !== null && avgFocus >= 6) {
+        good.push(`平均集中力は${avgFocus.toFixed(1)}で、取り組める時間帯は作れています。`);
+    } else if (avgFocus !== null) {
+        problems.push(`平均集中力は${avgFocus.toFixed(1)}で、重い内容に入りにくい状態です。`);
+        nextActions.push("来週は新しい内容より、復習・整理・短時間着手を増やしてください。");
+    }
+
+    if (avgFatigue !== null && avgFatigue >= 7) {
+        problems.push(`平均疲労は${avgFatigue.toFixed(1)}で高めです。`);
+        nextActions.push("来週は休日や夜勤後に、回復を先に置く日を作ってください。");
+    }
+
+    if (stats.achievementRate !== null && stats.achievementRate >= 70) {
+        good.push(`睡眠予定達成率は${stats.achievementRate.toFixed(0)}%で、予定に近い生活ができています。`);
+    } else if (stats.achievementRate !== null) {
+        problems.push(`睡眠予定達成率は${stats.achievementRate.toFixed(0)}%です。予定と実態のズレがあります。`);
+        nextActions.push("来週は理想予定ではなく、守れる睡眠予定に修正してください。");
+    }
+
+    if (goal.priorityItem) {
+        const priorityStats = buildSubjectStats(7).items.find(item => item.subject === goal.priorityItem);
+
+        if (priorityStats && priorityStats.minutes > 0) {
+            good.push(`優先項目「${goal.priorityItem}」に${priorityStats.minutes}分触れています。`);
+        } else {
+            problems.push(`優先項目「${goal.priorityItem}」に直近7日で触れられていません。`);
+            nextActions.push(`来週は「${goal.priorityItem}」を5分だけでも入れる日を作ってください。`);
+        }
+    }
+
+    if (good.length === 0) {
+        good.push("まだ良かった点を判定できるほど記録がありません。");
+    }
+
+    if (problems.length === 0) {
+        problems.push("大きな崩れは検出されていません。");
+    }
+
+    if (nextActions.length === 0) {
+        nextActions.push("来週は現在のリズムを維持し、優先項目に少しずつ時間を寄せてください。");
+    }
+
+    let conclusion = "今週の記録から、来週の方針を整理します。";
+
+    if (problems.length >= 3) {
+        conclusion = "今週は崩れ要因が複数あります。来週は成果拡大より、睡眠・記録・最低限の継続を優先してください。";
+    } else if (good.length >= 3 && problems.length <= 1) {
+        conclusion = "今週は比較的安定しています。来週は優先項目に少し負荷を足せます。";
+    } else {
+        conclusion = "今週は良い点と崩れた点が混在しています。来週は最低ラインを小さく固定してください。";
+    }
+
+    return {
+        conclusion,
+        good,
+        problems,
+        nextActions,
+        recordDays: stats.recordDays,
+        habitRate,
+        studyDays: stats.studyDays
+    };
+}
+
+function renderWeeklyList(id, items) {
+    const list = $(id);
+
+    if (!list) {
+        return;
+    }
+
+    list.innerHTML = "";
+
+    items.slice(0, 5).forEach(text => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.appendChild(li);
+    });
+}
+
+function updateWeeklyReview() {
+    const data = buildWeeklyReviewData();
+
+    setText("weeklyReviewConclusion", data.conclusion);
+    setText("weeklyReviewRecordDays", `${data.recordDays}/7日`);
+    setText("weeklyReviewHabitRate", data.habitRate === null ? "未計算" : `${data.habitRate.toFixed(0)}%`);
+    setText("weeklyReviewStudyDays", `${data.studyDays}日`);
+
+    renderWeeklyList("weeklyReviewGoodList", data.good);
+    renderWeeklyList("weeklyReviewProblemList", data.problems);
+    renderWeeklyList("weeklyReviewNextActionList", data.nextActions);
+}
+
+function buildWeeklyReviewText() {
+    const data = buildWeeklyReviewData();
+
+    return [
+        "【週間レビュー】",
+        `今週の結論：${data.conclusion}`,
+        `記録日数：${data.recordDays}/7日`,
+        `習慣達成率：${data.habitRate === null ? "未計算" : data.habitRate.toFixed(0) + "%"}`,
+        `取り組み日数：${data.studyDays}日`,
+        "",
+        "良かった点：",
+        ...data.good.map(item => `・${item}`),
+        "",
+        "崩れた点：",
+        ...data.problems.map(item => `・${item}`),
+        "",
+        "来週の方針：",
+        ...data.nextActions.map(item => `・${item}`)
+    ].join("\n");
+}
+
 // ==============================
 // 相関分析
 // ==============================
@@ -2814,10 +3159,6 @@ function interpretCorrelation(config, r) {
         return "片方または両方の値が一定で、相関を計算できません。";
     }
 
-    if (config.customMessage) {
-        return config.customMessage(r >= 0 ? "正" : "負", r);
-    }
-
     return r >= 0
         ? `${config.xLabel}が高い日は、${config.yLabel}も高くなる傾向があります。`
         : `${config.xLabel}が高い日は、${config.yLabel}が低くなる傾向があります。`;
@@ -2834,46 +3175,10 @@ function getCorrelationConfigs() {
         { xKey: "sleepiness", yKey: "studyTotal", xLabel: "眠気", yLabel: "取り組み時間", title: "眠気 × 取り組み時間", lagDays: 0, rankingGroup: "study", factorLabel: "眠気" },
         { xKey: "bedtimeGap", yKey: "studyTotal", xLabel: "就寝ズレ", yLabel: "取り組み時間", title: "就寝ズレ × 取り組み時間", lagDays: 0, rankingGroup: "study", factorLabel: "就寝ズレ" },
         { xKey: "wakeTimeGap", yKey: "studyTotal", xLabel: "起床ズレ", yLabel: "取り組み時間", title: "起床ズレ × 取り組み時間", lagDays: 0, rankingGroup: "study", factorLabel: "起床ズレ" },
-        {
-            xKey: "sleepHours",
-            yKey: "focus",
-            xLabel: "前日の睡眠時間",
-            yLabel: "翌日の集中力",
-            title: "前日睡眠 × 翌日集中力",
-            lagDays: 1,
-            rankingGroup: "focus",
-            factorLabel: "前日の睡眠"
-        },
-        {
-            xKey: "fatigue",
-            yKey: "studyTotal",
-            xLabel: "前日の疲労",
-            yLabel: "翌日の取り組み時間",
-            title: "前日疲労 × 翌日取り組み時間",
-            lagDays: 1,
-            rankingGroup: "study",
-            factorLabel: "前日の疲労"
-        },
-        {
-            xKey: "nightShift",
-            yKey: "sleepHours",
-            xLabel: "夜勤",
-            yLabel: "睡眠時間",
-            title: "夜勤 × 睡眠時間",
-            lagDays: 0,
-            rankingGroup: "risk",
-            factorLabel: "夜勤と睡眠"
-        },
-        {
-            xKey: "nightShift",
-            yKey: "fatigue",
-            xLabel: "夜勤",
-            yLabel: "疲労",
-            title: "夜勤 × 疲労",
-            lagDays: 0,
-            rankingGroup: "risk",
-            factorLabel: "夜勤と疲労"
-        }
+        { xKey: "sleepHours", yKey: "focus", xLabel: "前日の睡眠時間", yLabel: "翌日の集中力", title: "前日睡眠 × 翌日集中力", lagDays: 1, rankingGroup: "focus", factorLabel: "前日の睡眠" },
+        { xKey: "fatigue", yKey: "studyTotal", xLabel: "前日の疲労", yLabel: "翌日の取り組み時間", title: "前日疲労 × 翌日取り組み時間", lagDays: 1, rankingGroup: "study", factorLabel: "前日の疲労" },
+        { xKey: "nightShift", yKey: "sleepHours", xLabel: "夜勤", yLabel: "睡眠時間", title: "夜勤 × 睡眠時間", lagDays: 0, rankingGroup: "risk", factorLabel: "夜勤と睡眠" },
+        { xKey: "nightShift", yKey: "fatigue", xLabel: "夜勤", yLabel: "疲労", title: "夜勤 × 疲労", lagDays: 0, rankingGroup: "risk", factorLabel: "夜勤と疲労" }
     ];
 }
 
@@ -3389,12 +3694,7 @@ function updateCharts() {
         valueDecimals: 1,
         includeZero: true,
         datasets: [
-            {
-                key: "sleepHours",
-                label: "実睡眠",
-                color: "#2563eb",
-                values: buildSeriesFromRecords(dates, "sleepHours")
-            }
+            { key: "sleepHours", label: "実睡眠", color: "#2563eb", values: buildSeriesFromRecords(dates, "sleepHours") }
         ]
     });
 
@@ -3405,12 +3705,7 @@ function updateCharts() {
         valueDecimals: 0,
         includeZero: true,
         datasets: [
-            {
-                key: "studyTotal",
-                label: "取り組み時間",
-                color: "#16a34a",
-                values: buildSeriesFromRecords(dates, "studyTotal")
-            }
+            { key: "studyTotal", label: "取り組み時間", color: "#16a34a", values: buildSeriesFromRecords(dates, "studyTotal") }
         ]
     });
 
@@ -3799,6 +4094,20 @@ function buildHabitSummaryText(days) {
     return lines.join("\n");
 }
 
+function buildTodayHabitText(date) {
+    const habits = getHabits();
+
+    if (habits.length === 0) {
+        return "継続項目なし";
+    }
+
+    return habits.map(habit => {
+        const result = getHabitResult(date, habit.id);
+        const resultText = result === true ? "達成" : result === false ? "未達成・途切れた" : "未記録";
+        return `${habit.name}：${resultText}`;
+    }).join("\n");
+}
+
 function buildRecentDailyLines(records) {
     const dates = getRecentDates(7);
     const lines = [];
@@ -3905,20 +4214,6 @@ function buildCurrentDayText(date, record) {
     ].join("\n");
 }
 
-function buildTodayHabitText(date) {
-    const habits = getHabits();
-
-    if (habits.length === 0) {
-        return "継続項目なし";
-    }
-
-    return habits.map(habit => {
-        const result = getHabitResult(date, habit.id);
-        const resultText = result === true ? "達成" : result === false ? "未達成・途切れた" : "未記録";
-        return `${habit.name}：${resultText}`;
-    }).join("\n");
-}
-
 function buildCommonOpening() {
     return [
         "以下は、Life Growth Analyzerから出力した生活記録データです。",
@@ -3939,12 +4234,30 @@ function buildAiText(type, date, record, records) {
         "",
         buildWeeklySummaryText(records),
         "",
+        buildWeeklyReviewText(),
+        "",
         buildHabitSummaryText(7),
         "",
         buildSubjectSummaryText(records, 30),
         "",
         buildCorrelationSummaryText()
     ];
+
+    if (type === "weekly") {
+        return [
+            ...common,
+            "",
+            buildHabitSummaryText(30),
+            "",
+            buildRecentDailyLines(records),
+            "",
+            "【相談したいこと】",
+            "1. 今週の良かった点と崩れた点を整理してほしい。",
+            "2. 来週の最低ラインを現実的に設定してほしい。",
+            "3. 睡眠・取り組み・継続項目のどれを最優先で直すべきか。",
+            "4. 来週の行動を、最低ライン・標準ライン・余力がある日の3段階で提案してほしい。"
+        ].join("\n");
+    }
 
     if (type === "thirty") {
         return [
@@ -4022,6 +4335,7 @@ function getConsultTypeLabel(type) {
     if (type === "thirty") return "直近30日の生活改善相談";
     if (type === "long") return "長期傾向分析";
     if (type === "goal") return "目標達成・学習計画相談";
+    if (type === "weekly") return "週間レビュー相談";
     return "今日の行動相談";
 }
 
@@ -4114,7 +4428,7 @@ function deleteCurrentRecord() {
 function exportData() {
     const backupData = {
         appName: "Life Growth Analyzer",
-        version: "6.0",
+        version: "6.5",
         exportedAt: new Date().toISOString(),
         settings: getSettings(),
         subjects: getSubjectConfigs(),
@@ -4373,8 +4687,10 @@ window.addEventListener("load", () => {
     updateAutoAlerts();
     updateCorrelationAnalysis();
     updateSubjectAnalysis();
+    updateSubSubjectAnalysis();
     renderTodayHabitList();
     updateHabitAnalysis();
+    updateWeeklyReview();
 
     console.log("初期化完了");
 });
