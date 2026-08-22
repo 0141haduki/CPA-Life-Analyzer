@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v4.5</title>
+    <title>Life Growth Analyzer v5.4</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
     <header class="app-header">
-        <h1>CPA Life Analyzer</h1>
-        <p>睡眠・体調・勉強を記録し、自分の最適生活を探す</p>
+        <h1>Life Growth Analyzer</h1>
+        <p>睡眠・体調・行動を記録し、自分の成長パターンを探す</p>
     </header>
 
     <main class="app-container">
@@ -32,7 +32,7 @@
             </p>
 
             <ul id="todayAdviceList" class="advice-list">
-                <li>まずは睡眠実績、体調、勉強時間を入力してください。</li>
+                <li>まずは睡眠実績、体調、取り組み時間を入力してください。</li>
             </ul>
 
             <p id="adviceStatus" class="hint">
@@ -44,7 +44,7 @@
             <h2>🧪 自動検知</h2>
 
             <p class="hint">
-                直近の記録から、生活・睡眠・勉強で注意すべき点を自動判定します。
+                直近の記録から、生活・睡眠・行動で注意すべき点を自動判定します。
             </p>
 
             <div class="detection-conclusion-box">
@@ -114,7 +114,7 @@
 
             <div class="correlation-ranking-grid">
                 <div class="ranking-box">
-                    <h3>勉強時間に関係しそうな要因</h3>
+                    <h3>取り組み時間に関係しそうな要因</h3>
                     <div id="studyFactorRanking" class="factor-ranking">
                         <p class="empty">未計算</p>
                     </div>
@@ -144,6 +144,101 @@
             </p>
         </section>
 
+        <section class="card item-settings-card">
+            <h2>🧩 取り組み項目設定</h2>
+
+            <p class="hint">
+                学習・資格・読書・運動・仕事など、記録したい項目を自由に設定できます。
+            </p>
+
+            <label for="newSubjectName">追加する項目名</label>
+            <input type="text" id="newSubjectName" placeholder="例：英語、読書、筋トレ、プログラミング">
+
+            <button id="addSubjectButton" class="primary-button">
+                項目を追加
+            </button>
+
+            <div id="subjectSettingsList" class="subject-settings-list">
+                <p class="empty">項目を読み込み中です</p>
+            </div>
+
+            <p class="hint">
+                ※ 項目を削除しても、過去の記録データ自体は削除されません。
+            </p>
+        </section>
+
+        <section class="card item-analysis-card">
+            <h2>📚 項目別分析</h2>
+
+            <p class="hint">
+                直近7日・30日の取り組み項目別の時間と偏りを確認します。
+            </p>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">直近7日 上位項目</span>
+                    <span id="topSubject7" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">直近30日 上位項目</span>
+                    <span id="topSubject30" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近7日の項目別時間</h3>
+                <div id="subjectAnalysis7" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="ranking-box">
+                <h3>直近30日の項目別時間</h3>
+                <div id="subjectAnalysis30" class="subject-analysis-list">
+                    <p class="empty">未計算</p>
+                </div>
+            </div>
+
+            <div class="item-warning-box">
+                <span class="summary-label">項目別コメント</span>
+                <p id="subjectAnalysisComment" class="item-warning-text">
+                    記録が増えると、取り組みの偏りを表示します。
+                </p>
+            </div>
+        </section>
+
+        <section class="card goal-card">
+            <h2>🎯 目標設定</h2>
+
+            <p class="hint">
+                現在の目標を設定すると、AI相談用テキストや自動コメントに反映されます。
+            </p>
+
+            <label for="goalTitle">現在の目標</label>
+            <input type="text" id="goalTitle" placeholder="例：公認会計士試験合格、TOEIC900、体力改善、読書習慣化">
+
+            <label for="goalReason">目標の理由</label>
+            <textarea id="goalReason" rows="3" placeholder="例：生活を立て直し、将来の選択肢を増やしたい"></textarea>
+
+            <label for="goalPriorityItem">最優先で伸ばしたい項目</label>
+            <select id="goalPriorityItem">
+                <option value="">未選択</option>
+            </select>
+
+            <label for="goalMinimumMinutes">1日の最低ライン（分）</label>
+            <input type="number" id="goalMinimumMinutes" min="0" placeholder="例：15">
+
+            <label for="goalStandardMinutes">1日の標準ライン（分）</label>
+            <input type="number" id="goalStandardMinutes" min="0" placeholder="例：120">
+
+            <button id="saveGoalButton" class="primary-button">
+                目標設定を保存
+            </button>
+
+            <p id="goalStatus" class="small-status">未設定</p>
+        </section>
+
         <section class="card ai-text-card">
             <h2>🤖 AI相談用テキスト</h2>
 
@@ -158,7 +253,7 @@
                     <input type="radio" name="consultType" value="today" checked>
                     <span>
                         <strong>今日の行動相談</strong>
-                        <small>今日の勉強量・勤務前後の動き方を相談する</small>
+                        <small>今日の取り組み量・勤務前後の動き方を相談する</small>
                     </span>
                 </label>
 
@@ -166,7 +261,7 @@
                     <input type="radio" name="consultType" value="thirty">
                     <span>
                         <strong>直近30日の生活改善相談</strong>
-                        <small>睡眠・疲労・勉強継続の傾向を相談する</small>
+                        <small>睡眠・疲労・取り組み継続の傾向を相談する</small>
                     </span>
                 </label>
 
@@ -179,10 +274,10 @@
                 </label>
 
                 <label class="consult-type-option">
-                    <input type="radio" name="consultType" value="exam">
+                    <input type="radio" name="consultType" value="goal">
                     <span>
-                        <strong>試験勉強計画相談</strong>
-                        <small>公認会計士試験に向けた勉強配分を相談する</small>
+                        <strong>目標達成・学習計画相談</strong>
+                        <small>設定した目標に向けた現実的な計画を相談する</small>
                     </span>
                 </label>
             </div>
@@ -312,30 +407,21 @@
         </section>
 
         <section class="card">
-            <h2>📚 勉強時間</h2>
+            <h2>📌 行動・取り組み</h2>
 
-            <label for="studyTotal">総勉強時間（分）</label>
+            <label for="studyTotal">取り組み時間（分）</label>
             <input type="number" id="studyTotal" min="0" placeholder="例：180">
 
-            <label for="mainSubject">主に勉強した科目</label>
+            <label for="mainSubject">主に取り組んだ項目</label>
             <select id="mainSubject">
                 <option value="">未選択</option>
-                <option value="財務会計論">財務会計論</option>
-                <option value="管理会計論">管理会計論</option>
-                <option value="監査論">監査論</option>
-                <option value="企業法">企業法</option>
-                <option value="租税法">租税法</option>
-                <option value="経営学">経営学</option>
-                <option value="英語">英語</option>
-                <option value="新聞">新聞</option>
-                <option value="その他">その他</option>
             </select>
         </section>
 
         <section class="card">
-            <h2>💼 勤務</h2>
+            <h2>💼 勤務・予定</h2>
 
-            <label for="workType">勤務区分</label>
+            <label for="workType">勤務・予定区分</label>
             <select id="workType">
                 <option value="">未選択</option>
                 <option value="休み">休み</option>
@@ -345,6 +431,8 @@
                 <option value="21-8">21-8</option>
                 <option value="21-9">21-9</option>
                 <option value="応援勤務">応援勤務</option>
+                <option value="予定あり">予定あり</option>
+                <option value="自由日">自由日</option>
             </select>
         </section>
 
@@ -352,7 +440,7 @@
             <h2>📝 メモ</h2>
 
             <label for="memo">今日のメモ</label>
-            <textarea id="memo" rows="5" placeholder="例：夜に眠気が強かった。企業法を少し進めた。"></textarea>
+            <textarea id="memo" rows="5" placeholder="例：眠気が強かった。少しだけ取り組めた。"></textarea>
         </section>
 
         <section class="card warning-card" id="warningCard">
@@ -401,7 +489,7 @@
             </div>
 
             <p class="hint">
-                ※ 予定睡眠だけでは「記録あり」と判定しません。実睡眠・体調・勉強・勤務・メモなどの入力状況で判定します。
+                ※ 予定睡眠だけでは「記録あり」と判定しません。実睡眠・体調・取り組み・勤務・メモなどの入力状況で判定します。
             </p>
         </section>
 
@@ -420,7 +508,7 @@
                 </div>
 
                 <div class="summary-box">
-                    <span class="summary-label">合計勉強時間</span>
+                    <span class="summary-label">合計取り組み時間</span>
                     <span id="weeklyStudyTotal" class="summary-value">未計算</span>
                 </div>
 
@@ -482,9 +570,9 @@
             </div>
 
             <div class="chart-block">
-                <h3>勉強時間</h3>
+                <h3>取り組み時間</h3>
                 <canvas id="studyChart" width="700" height="280"></canvas>
-                <p class="chart-note">総勉強時間を表示します。単位は分です。</p>
+                <p class="chart-note">取り組み時間を表示します。単位は分です。</p>
             </div>
 
             <div class="chart-block">
@@ -568,7 +656,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v4.5</p>
+        <p>Life Growth Analyzer v5.4</p>
     </footer>
 
     <script src="script.js"></script>

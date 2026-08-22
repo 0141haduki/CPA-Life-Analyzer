@@ -1,4 +1,4 @@
-/* CPA Life Analyzer v4.5 */
+/* Life Growth Analyzer v5.4 */
 
 * {
     box-sizing: border-box;
@@ -269,6 +269,7 @@ textarea {
     border: 1px solid #ddd6fe;
     border-radius: 12px;
     background: white;
+    margin-top: 14px;
 }
 
 .ranking-box h3 {
@@ -368,6 +369,116 @@ textarea {
     font-size: 12px;
     color: #92400e;
     font-weight: 700;
+}
+
+/* 取り組み項目設定 */
+.item-settings-card {
+    border-left: 5px solid #10b981;
+    background: #ecfdf5;
+}
+
+.subject-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.subject-setting-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    background: white;
+}
+
+.subject-setting-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #14532d;
+}
+
+.subject-delete-button {
+    padding: 7px 10px;
+    border: none;
+    border-radius: 8px;
+    background: #dc2626;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.subject-delete-button:hover {
+    background: #b91c1c;
+}
+
+/* 項目別分析 */
+.item-analysis-card {
+    border-left: 5px solid #0f766e;
+    background: #f0fdfa;
+}
+
+.subject-analysis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.subject-analysis-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #ccfbf1;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.subject-analysis-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #134e4a;
+}
+
+.subject-analysis-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.subject-analysis-time {
+    font-size: 13px;
+    font-weight: 900;
+    color: #0f766e;
+    white-space: nowrap;
+}
+
+.item-warning-box {
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid #99f6e4;
+    border-radius: 12px;
+    background: white;
+}
+
+.item-warning-text {
+    margin: 4px 0 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #115e59;
+}
+
+/* 目標設定 */
+.goal-card {
+    border-left: 5px solid #2563eb;
+    background: #eff6ff;
 }
 
 /* AI相談用テキスト */
@@ -987,6 +1098,17 @@ textarea {
     .correlation-summary {
         grid-template-columns: 1fr;
     }
+
+    .subject-setting-item,
+    .subject-analysis-item,
+    .factor-item {
+        grid-template-columns: 1fr;
+    }
+
+    .subject-analysis-time,
+    .factor-score {
+        white-space: normal;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1030,13 +1152,5 @@ textarea {
 
     .calendar-day-label {
         font-size: 10px;
-    }
-
-    .factor-item {
-        grid-template-columns: 1fr;
-    }
-
-    .factor-score {
-        white-space: normal;
     }
 }
