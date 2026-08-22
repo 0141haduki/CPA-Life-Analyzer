@@ -1,6 +1,6 @@
-// CPA Life Analyzer v2.8
+// CPA Life Analyzer v2.9
 
-console.log("CPA Life Analyzer v2.8 起動");
+console.log("CPA Life Analyzer v2.9 起動");
 
 // localStorageに保存するキー
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
@@ -223,7 +223,6 @@ function setFormData(data) {
         }
     });
 
-    // 古い記録に予定時刻がない場合は、基本設定を画面上だけ補完する
     if (!data.plannedBedtime) {
         const plannedBedtime = document.getElementById("plannedBedtime");
 
@@ -286,6 +285,7 @@ function saveCurrentRecord() {
 
     renderHistory();
     updateWeeklySummary();
+    updateAchievementSummary();
     updateDeleteButton();
 
     console.log("保存しました", date, records[date]);
@@ -312,6 +312,7 @@ function loadRecord(date) {
     updateAllCalculatedDisplays();
     renderHistory();
     updateWeeklySummary();
+    updateAchievementSummary();
     updateDeleteButton();
 }
 
@@ -403,12 +404,14 @@ function formatGapMinutes(minutes) {
         return "未計算";
     }
 
-    if (minutes === 0) {
+    const roundedMinutes = Math.round(minutes);
+
+    if (roundedMinutes === 0) {
         return "±0分";
     }
 
-    const sign = minutes > 0 ? "+" : "-";
-    const abs = Math.abs(minutes);
+    const sign = roundedMinutes > 0 ? "+" : "-";
+    const abs = Math.abs(roundedMinutes);
     const hours = Math.floor(abs / 60);
     const mins = abs % 60;
 
@@ -456,6 +459,16 @@ function setSummaryClass(element, value, type) {
             element.classList.add("danger");
         }
     }
+
+    if (type === "achievement") {
+        if (value >= 70) {
+            element.classList.add("good");
+        } else if (value >= 40) {
+            element.classList.add("warning");
+        } else {
+            element.classList.add("danger");
+        }
+    }
 }
 
 // 記録データから睡眠効率を計算
@@ -478,6 +491,39 @@ function calculateSleepEfficiencyFromRecord(record) {
     }
 
     return sleepHours / timeInBedHours * 100;
+}
+
+// 記録データから予定達成情報を計算
+function calculateAchievementFromRecord(record) {
+    if (!record) {
+        return null;
+    }
+
+    const bedtimeGap = calculateClockGapMinutes(record.plannedBedtime, record.bedtime);
+    const wakeTimeGap = calculateClockGapMinutes(record.plannedWakeTime, record.wakeTime);
+
+    const plannedTimeInBed = calculateTimeInBedHours(record.plannedBedtime, record.plannedWakeTime);
+    const actualTimeInBed = calculateTimeInBedHours(record.bedtime, record.wakeTime);
+
+    let timeInBedGap = null;
+
+    if (plannedTimeInBed !== null && actualTimeInBed !== null) {
+        timeInBedGap = Math.round((actualTimeInBed - plannedTimeInBed) * 60);
+    }
+
+    const hasRequiredGaps = bedtimeGap !== null && wakeTimeGap !== null;
+
+    const achieved = hasRequiredGaps &&
+        Math.abs(bedtimeGap) <= 30 &&
+        Math.abs(wakeTimeGap) <= 30;
+
+    return {
+        bedtimeGap,
+        wakeTimeGap,
+        timeInBedGap,
+        achieved,
+        canJudgeAchievement: hasRequiredGaps
+    };
 }
 
 // 現在画面の睡眠効率を計算
@@ -762,6 +808,107 @@ function updateWeeklySummary() {
     setText("weeklyAvgFocus", averageText(focusValues, ""));
 }
 
+// 予定達成分析を更新
+function updateAchievementSummary() {
+    const records = getRecords();
+    const dates = Object.keys(records)
+        .filter(date => {
+            const diff = getDaysDiff(date);
+            return diff >= 0 && diff <= 6;
+        });
+
+    const bedtimeGaps = [];
+    const wakeTimeGaps = [];
+    const timeInBedGaps = [];
+
+    let achievementTargetCount = 0;
+    let achievedCount = 0;
+
+    dates.forEach(date => {
+        const record = records[date];
+        const achievement = calculateAchievementFromRecord(record);
+
+        if (!achievement) {
+            return;
+        }
+
+        if (achievement.bedtimeGap !== null) {
+            bedtimeGaps.push(achievement.bedtimeGap);
+        }
+
+        if (achievement.wakeTimeGap !== null) {
+            wakeTimeGaps.push(achievement.wakeTimeGap);
+        }
+
+        if (achievement.timeInBedGap !== null) {
+            timeInBedGaps.push(achievement.timeInBedGap);
+        }
+
+        if (achievement.canJudgeAchievement) {
+            achievementTargetCount += 1;
+
+            if (achievement.achieved) {
+                achievedCount += 1;
+            }
+        }
+    });
+
+    const avgBedtimeGap = averageNumber(bedtimeGaps);
+    const avgWakeTimeGap = averageNumber(wakeTimeGaps);
+    const avgTimeInBedGap = averageNumber(timeInBedGaps);
+
+    const achievementRate =
+        achievementTargetCount === 0
+            ? null
+            : achievedCount / achievementTargetCount * 100;
+
+    setGapSummary("weeklyAvgBedtimeGap", avgBedtimeGap);
+    setGapSummary("weeklyAvgWakeTimeGap", avgWakeTimeGap);
+    setGapSummary("weeklyAvgTimeInBedGap", avgTimeInBedGap);
+
+    const achievementElement = document.getElementById("weeklyAchievementRate");
+
+    if (achievementElement) {
+        achievementElement.classList.remove("good", "warning", "danger");
+
+        if (achievementRate === null) {
+            achievementElement.textContent = "未計算";
+        } else {
+            achievementElement.textContent = `${achievementRate.toFixed(0)}%`;
+            setSummaryClass(achievementElement, achievementRate, "achievement");
+        }
+    }
+}
+
+// 平均値を数値で返す
+function averageNumber(values) {
+    if (values.length === 0) {
+        return null;
+    }
+
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return total / values.length;
+}
+
+// ズレの平均を表示
+function setGapSummary(id, value) {
+    const element = document.getElementById(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.classList.remove("good", "warning", "danger");
+
+    if (value === null) {
+        element.textContent = "未計算";
+        return;
+    }
+
+    element.textContent = formatGapMinutes(value);
+    setSummaryClass(element, value, "gap");
+}
+
 // 平均値の表示
 function averageText(values, unit) {
     if (values.length === 0) {
@@ -846,6 +993,7 @@ function renderHistory() {
         const record = records[date];
 
         const efficiency = calculateSleepEfficiencyFromRecord(record);
+        const achievement = calculateAchievementFromRecord(record);
 
         const sleepText = record.sleepHours
             ? `実睡眠 ${record.sleepHours}h`
@@ -868,10 +1016,35 @@ function renderHistory() {
                 ? `予定 ${record.plannedBedtime}-${record.plannedWakeTime}`
                 : "予定 未入力";
 
+        const bedtimeGapText =
+            achievement && achievement.bedtimeGap !== null
+                ? `就寝ズレ ${formatGapMinutes(achievement.bedtimeGap)}`
+                : "就寝ズレ 未計算";
+
+        const wakeGapText =
+            achievement && achievement.wakeTimeGap !== null
+                ? `起床ズレ ${formatGapMinutes(achievement.wakeTimeGap)}`
+                : "起床ズレ 未計算";
+
+        const achievementClass =
+            achievement && achievement.canJudgeAchievement && achievement.achieved
+                ? "good"
+                : achievement && achievement.canJudgeAchievement
+                    ? "warning"
+                    : "";
+
+        const achievementText =
+            achievement && achievement.canJudgeAchievement && achievement.achieved
+                ? "予定達成"
+                : achievement && achievement.canJudgeAchievement
+                    ? "予定未達"
+                    : "予定判定 未計算";
+
         button.innerHTML = `
             <span class="history-date">${date}</span>
             <span class="history-detail">${planText}</span>
             <span class="history-detail">${sleepText}　${efficiencyText}</span>
+            <span class="history-detail ${achievementClass}">${bedtimeGapText}　${wakeGapText}　${achievementText}</span>
             <span class="history-detail">${studyText}　${workText}</span>
         `;
 
@@ -958,6 +1131,7 @@ function deleteCurrentRecord() {
     updateSaveStatus(`削除しました：${date}`, false);
     renderHistory();
     updateWeeklySummary();
+    updateAchievementSummary();
     updateDeleteButton();
 
     console.log("削除しました", date);
@@ -970,7 +1144,7 @@ function exportData() {
 
     const backupData = {
         appName: "CPA Life Analyzer",
-        version: "2.8",
+        version: "2.9",
         exportedAt: new Date().toISOString(),
         settings: settings,
         records: records
@@ -998,7 +1172,6 @@ function normalizeImportedRecords(importedData) {
         return null;
     }
 
-    // v2.7以降の形式
     if (
         importedData.records &&
         typeof importedData.records === "object" &&
@@ -1007,7 +1180,6 @@ function normalizeImportedRecords(importedData) {
         return importedData.records;
     }
 
-    // recordsだけを直接JSON化した形式にも対応
     if (typeof importedData === "object" && !Array.isArray(importedData)) {
         return importedData;
     }
@@ -1105,7 +1277,6 @@ function setupBackupEvents() {
             const file = event.target.files[0];
             importDataFromFile(file);
 
-            // 同じファイルをもう一度選べるようにする
             event.target.value = "";
         });
     }
@@ -1192,6 +1363,7 @@ window.addEventListener("load", () => {
 
     updateDeleteButton();
     updateWeeklySummary();
+    updateAchievementSummary();
     updateSettingsStatus();
 
     console.log("初期化完了");

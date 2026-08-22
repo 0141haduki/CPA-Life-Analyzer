@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPA Life Analyzer v2.8</title>
+    <title>CPA Life Analyzer v2.9</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -68,6 +68,36 @@
                     <span id="weeklyAvgFocus" class="summary-value">未計算</span>
                 </div>
             </div>
+        </section>
+
+        <section class="card achievement-card">
+            <h2>🎯 直近7日の予定達成分析</h2>
+
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <span class="summary-label">平均就寝ズレ</span>
+                    <span id="weeklyAvgBedtimeGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均起床ズレ</span>
+                    <span id="weeklyAvgWakeTimeGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">平均在床差</span>
+                    <span id="weeklyAvgTimeInBedGap" class="summary-value">未計算</span>
+                </div>
+
+                <div class="summary-box">
+                    <span class="summary-label">予定達成率</span>
+                    <span id="weeklyAchievementRate" class="summary-value">未計算</span>
+                </div>
+            </div>
+
+            <p class="hint">
+                ※ 予定達成率は、就寝ズレ・起床ズレがそれぞれ30分以内の日を「達成」として計算します。
+            </p>
         </section>
 
         <section class="card">
@@ -252,7 +282,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>CPA Life Analyzer v2.8</p>
+        <p>CPA Life Analyzer v2.9</p>
     </footer>
 
     <script src="script.js"></script>
