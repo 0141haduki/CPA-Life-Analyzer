@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPA Life Analyzer v2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="app-header">
+        <h1>CPA Life Analyzer</h1>
+        <p>睡眠・体調・勉強を記録し、自分の最適生活を探す</p>
+    </header>
+
+    <main class="app-container">
+
+        <section class="card">
+            <h2>📅 記録日</h2>
+
+            <label for="recordDate">日付</label>
+            <input type="date" id="recordDate">
+        </section>
+
+        <section class="card">
+            <h2>🌙 睡眠</h2>
+
+            <label for="bedtime">就寝時刻</label>
+            <input type="time" id="bedtime">
+
+            <label for="wakeTime">起床時刻</label>
+            <input type="time" id="wakeTime">
+
+            <label for="sleepHours">睡眠時間（時間）</label>
+            <input type="number" id="sleepHours" step="0.1" placeholder="例：7.5">
+
+            <label for="awakeCount">覚醒回数</label>
+            <input type="number" id="awakeCount" min="0" placeholder="例：2">
+        </section>
+
+        <section class="card">
+            <h2>😊 体調</h2>
+
+            <label for="mood">気分（1〜10）</label>
+            <input type="number" id="mood" min="1" max="10">
+
+            <label for="sleepiness">眠気（1〜10）</label>
+            <input type="number" id="sleepiness" min="1" max="10">
+
+            <label for="fatigue">疲労（1〜10）</label>
+            <input type="number" id="fatigue" min="1" max="10">
+
+            <label for="focus">集中力（1〜10）</label>
+            <input type="number" id="focus" min="1" max="10">
+        </section>
+
+        <section class="card">
+            <h2>📚 勉強時間</h2>
+
+            <label for="studyTotal">総勉強時間（分）</label>
+            <input type="number" id="studyTotal" min="0" placeholder="例：180">
+
+            <label for="mainSubject">主に勉強した科目</label>
+            <select id="mainSubject">
+                <option value="">未選択</option>
+                <option value="財務会計論">財務会計論</option>
+                <option value="管理会計論">管理会計論</option>
+                <option value="監査論">監査論</option>
+                <option value="企業法">企業法</option>
+                <option value="租税法">租税法</option>
+                <option value="経営学">経営学</option>
+                <option value="英語">英語</option>
+                <option value="新聞">新聞</option>
+                <option value="その他">その他</option>
+            </select>
+        </section>
+
+        <section class="card">
+            <h2>💼 勤務</h2>
+
+            <label for="workType">勤務区分</label>
+            <select id="workType">
+                <option value="">未選択</option>
+                <option value="休み">休み</option>
+                <option value="昼勤務">昼勤務</option>
+                <option value="21-23">21-23</option>
+                <option value="21-6">21-6</option>
+                <option value="21-8">21-8</option>
+                <option value="21-9">21-9</option>
+                <option value="応援勤務">応援勤務</option>
+            </select>
+        </section>
+
+        <section class="card">
+            <h2>📝 メモ</h2>
+
+            <label for="memo">今日のメモ</label>
+            <textarea id="memo" rows="5" placeholder="例：夜に眠気が強かった。木更津応援。企業法を少し進めた。"></textarea>
+        </section>
+
+        <section class="card status-card">
+            <h2>💾 保存状態</h2>
+            <p id="saveStatus">まだ保存していません</p>
+        </section>
+
+        <section class="card">
+            <h2>📖 記録履歴</h2>
+            <div id="historyList" class="history-list">
+                <p class="empty">まだ記録がありません</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="app-footer">
+        <p>CPA Life Analyzer v2</p>
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

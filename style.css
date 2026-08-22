@@ -1,0 +1,151 @@
+/* CPA Life Analyzer v2 */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+    line-height: 1.6;
+}
+
+.app-header {
+    background: #1f2937;
+    color: white;
+    padding: 24px 16px;
+    text-align: center;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.app-header p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #d1d5db;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.card h2 {
+    margin: 0 0 16px;
+    font-size: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 8px;
+}
+
+label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 16px;
+    background: #fff;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+textarea {
+    resize: vertical;
+}
+
+.status-card {
+    border-left: 5px solid #2563eb;
+}
+
+#saveStatus {
+    margin: 0;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.history-item {
+    width: 100%;
+    text-align: left;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.history-item:hover {
+    background: #eef2ff;
+    border-color: #2563eb;
+}
+
+.history-item.active {
+    background: #dbeafe;
+    border-color: #2563eb;
+    font-weight: 700;
+}
+
+.empty {
+    margin: 0;
+    color: #6b7280;
+}
+
+.app-footer {
+    text-align: center;
+    padding: 24px 16px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+@media (max-width: 480px) {
+    .app-header h1 {
+        font-size: 24px;
+    }
+
+    .card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
