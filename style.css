@@ -1,4 +1,4 @@
-/* Life Growth Analyzer v9.7 */
+/* Life Growth Analyzer v10.0 */
 
 * {
     box-sizing: border-box;
@@ -34,7 +34,6 @@ body {
     color: #d1d5db;
 }
 
-/* ページ切り替え */
 .page-tabs {
     position: sticky;
     top: 0;
@@ -116,6 +115,16 @@ body {
     font-weight: 600;
 }
 
+.morning-label {
+    background: #0f766e;
+    border-left-color: #14b8a6;
+}
+
+.night-label {
+    background: #312e81;
+    border-left-color: #818cf8;
+}
+
 .card h2 {
     margin: 0 0 16px;
     font-size: 20px;
@@ -135,7 +144,7 @@ label {
     display: block;
     margin-top: 14px;
     margin-bottom: 6px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 14px;
 }
 
@@ -173,7 +182,18 @@ textarea {
     color: #6b7280;
 }
 
-/* ボタン */
+.compact-list {
+    margin: 10px 0 0;
+    padding-left: 20px;
+}
+
+.compact-list li {
+    margin-bottom: 4px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .primary-button,
 .file-label {
     display: block;
@@ -185,7 +205,7 @@ textarea {
     background: #2563eb;
     color: white;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
     text-align: center;
     cursor: pointer;
 }
@@ -210,7 +230,7 @@ textarea {
     background: white;
     color: #2563eb;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
     text-align: center;
     cursor: pointer;
 }
@@ -235,7 +255,7 @@ textarea {
     background: #dc2626;
     color: white;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
 }
 
@@ -251,7 +271,7 @@ textarea {
 .small-status {
     margin: 10px 0 0;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
     color: #0369a1;
 }
 
@@ -278,57 +298,187 @@ textarea {
     color: #334155;
 }
 
-/* 初回セットアップ */
-.setup-card {
+/* はじめに */
+.onboarding-card {
     border-left: 5px solid #6366f1;
     background: #eef2ff;
 }
 
-.setup-checklist {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 14px;
+.onboarding-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
 }
 
-.setup-item {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 8px;
-    align-items: center;
-    padding: 10px 12px;
-    border: 1px solid #c7d2fe;
+/* 朝 */
+.date-card {
+    border-left: 5px solid #0891b2;
+}
+
+.morning-guide-card {
+    border-left: 5px solid #14b8a6;
+    background: #f0fdfa;
+}
+
+.guide-main {
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #99f6e4;
     border-radius: 12px;
     background: white;
+    color: #134e4a;
+    font-size: 15px;
     font-weight: 800;
-    color: #3730a3;
 }
 
-.setup-item.done {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
-    color: #166534;
+/* 夜 */
+.night-warning-card {
+    border-left: 5px solid #7c3aed;
+    background: #f5f3ff;
 }
 
-.setup-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 999px;
-    background: #e0e7ff;
-    color: #3730a3;
-    font-size: 13px;
+.night-warning-main {
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #ddd6fe;
+    border-radius: 12px;
+    background: white;
+    color: #4c1d95;
+    font-size: 15px;
     font-weight: 900;
 }
 
-.setup-item.done .setup-mark {
-    background: #dcfce7;
+.sleep-timing-box {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #ddd6fe;
+    border-radius: 12px;
+    background: white;
+}
+
+.night-timing-message {
+    margin: 4px 0 0;
+    font-size: 15px;
+    font-weight: 900;
+    color: #4c1d95;
+}
+
+.night-timing-message.good {
     color: #166534;
 }
 
-.setup-action-grid {
+.night-timing-message.warning {
+    color: #92400e;
+}
+
+.night-timing-message.danger {
+    color: #991b1b;
+}
+
+.night-complete-card {
+    border-left: 5px solid #312e81;
+    background: #eef2ff;
+}
+
+.time-split-input {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.time-split-input div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.time-split-input span {
+    font-size: 14px;
+    font-weight: 900;
+    color: #334155;
+}
+
+/* 自己採点 */
+.self-score-card {
+    border-left: 5px solid #f97316;
+    background: #fff7ed;
+}
+
+#selfScore {
+    padding: 0;
+    accent-color: #f97316;
+}
+
+.score-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    color: #9a3412;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.score-judge {
+    margin: 12px 0 0;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #fed7aa;
+    background: white;
+    color: #9a3412;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.low-score-box {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    background: white;
+}
+
+.low-score-box.hidden {
+    display: none;
+}
+
+.low-score-box h3 {
+    margin: 0 0 8px;
+    color: #9a3412;
+    font-size: 16px;
+}
+
+.reason-button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.reason-button {
+    min-height: 42px;
+    padding: 9px 6px;
+    border: 1px solid #fed7aa;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.reason-button:hover {
+    background: #ffedd5;
+    border-color: #f97316;
+}
+
+.reason-button.active {
+    background: #f97316;
+    border-color: #f97316;
+    color: white;
+}
+
+.tomorrow-action-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
@@ -338,6 +488,13 @@ textarea {
 .today-plan-card {
     border-left: 5px solid #0284c7;
     background: #f0f9ff;
+}
+
+.today-plan-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
 }
 
 .today-plan-grid {
@@ -531,6 +688,10 @@ textarea {
     margin-top: 16px;
 }
 
+.compact-template-list {
+    gap: 8px;
+}
+
 .schedule-template-item {
     padding: 12px;
     border: 1px solid #fed7aa;
@@ -538,11 +699,8 @@ textarea {
     background: white;
 }
 
-.schedule-template-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: flex-start;
+.compact-template-item {
+    padding: 10px;
 }
 
 .schedule-template-title {
@@ -554,21 +712,10 @@ textarea {
 
 .schedule-template-meta {
     display: block;
-    margin-top: 4px;
+    margin-top: 3px;
     font-size: 12px;
     font-weight: 700;
     color: #64748b;
-}
-
-.schedule-template-memo {
-    margin: 8px 0 0;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: #fff7ed;
-    border: 1px solid #ffedd5;
-    color: #7c2d12;
-    font-size: 12px;
-    font-weight: 700;
 }
 
 .schedule-template-actions {
@@ -578,11 +725,8 @@ textarea {
     margin-top: 10px;
 }
 
-.template-use-button,
-.template-direct-add-button,
-.template-edit-button,
-.template-update-button {
-    min-height: 40px;
+.template-add-button {
+    min-height: 38px;
     border: none;
     border-radius: 10px;
     background: #f97316;
@@ -592,25 +736,12 @@ textarea {
     cursor: pointer;
 }
 
-.template-use-button:hover,
-.template-direct-add-button:hover,
-.template-edit-button:hover,
-.template-update-button:hover {
+.template-add-button:hover {
     background: #ea580c;
 }
 
-.template-edit-button,
-.template-update-button {
-    background: #2563eb;
-}
-
-.template-edit-button:hover,
-.template-update-button:hover {
-    background: #1d4ed8;
-}
-
 .template-delete-button {
-    min-height: 40px;
+    min-height: 38px;
     border: none;
     border-radius: 10px;
     background: #dc2626;
@@ -787,7 +918,7 @@ textarea {
     color: #166534;
 }
 
-/* 今日のアドバイス */
+/* 今日の方針 */
 .advice-card {
     border-left: 5px solid #14b8a6;
     background: #f0fdfa;
@@ -801,7 +932,7 @@ textarea {
     border: 1px solid #99f6e4;
     color: #134e4a;
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .advice-list {
@@ -812,7 +943,7 @@ textarea {
 .advice-list li {
     margin-bottom: 8px;
     color: #334155;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .advice-list li.priority-high {
@@ -854,7 +985,7 @@ textarea {
     background: white;
     color: #166534;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -916,7 +1047,7 @@ textarea {
     padding: 3px 8px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 900;
     background: #dcfce7;
     color: #166534;
     white-space: nowrap;
@@ -949,7 +1080,7 @@ textarea {
     border: 1px solid #e2e8f0;
     color: #334155;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .habit-frequency-pill {
@@ -976,7 +1107,7 @@ textarea {
     background: #16a34a;
     color: white;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -1044,12 +1175,13 @@ textarea {
     font-size: 13px;
     color: #64748b;
     margin-bottom: 4px;
+    font-weight: 800;
 }
 
 .summary-value {
     display: block;
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 900;
     color: #1e293b;
 }
 
@@ -1092,13 +1224,13 @@ textarea {
 
 .rating-title {
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     color: #1f2937;
 }
 
 .rating-current {
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     color: #475569;
     background: white;
     border: 1px solid #cbd5e1;
@@ -1119,7 +1251,7 @@ textarea {
     background: white;
     color: #1f2937;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -1151,12 +1283,12 @@ textarea {
 #warningList li {
     margin-bottom: 6px;
     color: #92400e;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 #warningList li.empty {
     color: #15803d;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* 保存状態 */
@@ -1170,7 +1302,7 @@ textarea {
 
 #saveStatus {
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
     color: #2563eb;
 }
 
@@ -1186,7 +1318,7 @@ textarea {
 
 .analysis-tabs {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
 }
 
@@ -1297,6 +1429,12 @@ textarea {
     background: #f0fdfa;
 }
 
+/* 自己採点分析 */
+.self-score-analysis-card {
+    border-left: 5px solid #f97316;
+    background: #fff7ed;
+}
+
 /* 自動検知 */
 .detection-card {
     border-left: 5px solid #f97316;
@@ -1314,7 +1452,7 @@ textarea {
 .detection-conclusion {
     margin: 4px 0 0;
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 900;
     color: #9a3412;
 }
 
@@ -1356,7 +1494,7 @@ textarea {
     padding: 3px 8px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .alert-level.high {
@@ -1378,7 +1516,7 @@ textarea {
 .correlation-title {
     margin: 2px 0 4px;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     color: #1f2937;
 }
 
@@ -1393,34 +1531,11 @@ textarea {
 .correlation-note-text {
     margin: 6px 0 0;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
     color: #475569;
 }
 
-/* 相関分析 */
-.correlation-card {
-    border-left: 5px solid #7c3aed;
-    background: #f5f3ff;
-}
-
-.correlation-insight-box {
-    border-color: #ddd6fe;
-}
-
-.correlation-insight {
-    margin: 4px 0 0;
-    font-size: 15px;
-    font-weight: 800;
-    color: #4c1d95;
-}
-
-.correlation-ranking-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-top: 16px;
-}
-
+/* ランキング */
 .ranking-box {
     padding: 12px;
     border: 1px solid #ddd6fe;
@@ -1448,13 +1563,13 @@ textarea {
     align-items: center;
     padding: 9px 10px;
     border-radius: 10px;
-    background: #f8fafc;
+    background: white;
     border: 1px solid #e2e8f0;
 }
 
 .factor-name {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     color: #1f2937;
 }
 
@@ -1462,7 +1577,7 @@ textarea {
     display: block;
     margin-top: 2px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #64748b;
 }
 
@@ -1471,23 +1586,6 @@ textarea {
     font-weight: 900;
     color: #4c1d95;
     white-space: nowrap;
-}
-
-.correlation-item.middle {
-    border-left: 6px solid #2563eb;
-    background: #eff6ff;
-}
-
-.correlation-level.middle {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-
-.correlation-warning {
-    margin: 6px 0 0;
-    font-size: 12px;
-    color: #92400e;
-    font-weight: 700;
 }
 
 /* 継続分析 */
@@ -1581,7 +1679,7 @@ textarea {
 
 .subject-analysis-name {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     color: #134e4a;
 }
 
@@ -1589,7 +1687,7 @@ textarea {
     display: block;
     margin-top: 2px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #64748b;
 }
 
@@ -1611,7 +1709,7 @@ textarea {
 .item-warning-text {
     margin: 4px 0 0;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     color: #115e59;
 }
 
@@ -1666,7 +1764,7 @@ textarea {
     background: #dc2626;
     color: white;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -1704,7 +1802,7 @@ textarea {
 
 .subsubject-name {
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     color: #334155;
 }
 
@@ -1727,7 +1825,7 @@ textarea {
     background: #0f766e;
     color: white;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -1871,13 +1969,13 @@ textarea {
 
 .calendar-day.selected {
     box-shadow: 0 0 0 3px #2563eb inset;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .calendar-day-number {
     display: block;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .calendar-day-label {
@@ -1897,12 +1995,6 @@ textarea {
     border: 1px solid #dbe3ee;
     border-radius: 12px;
     background: #f8fafc;
-}
-
-.chart-block h3 {
-    margin: 0 0 10px;
-    font-size: 16px;
-    color: #1e293b;
 }
 
 .chart-block canvas {
@@ -1935,7 +2027,7 @@ textarea {
     background: white;
     color: #334155;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -1953,7 +2045,7 @@ textarea {
 .chart-focus-status {
     margin: 0 0 10px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
     color: #475569;
 }
 
@@ -1971,7 +2063,7 @@ textarea {
     border-radius: 10px;
     background: #f8fafc;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 900;
     cursor: pointer;
 }
 
@@ -2011,7 +2103,7 @@ textarea {
 .history-item.active {
     background: #dbeafe;
     border-color: #2563eb;
-    font-weight: 700;
+    font-weight: 900;
 }
 
 .history-item.full {
@@ -2028,7 +2120,7 @@ textarea {
 
 .history-date {
     display: block;
-    font-weight: 800;
+    font-weight: 900;
     margin-bottom: 4px;
 }
 
@@ -2055,7 +2147,7 @@ textarea {
 .consult-type-title {
     margin: 0 0 10px;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     color: #3730a3;
 }
 
@@ -2152,7 +2244,7 @@ textarea {
     background: #fffbeb;
     color: #92400e;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 .danger-card {
@@ -2178,6 +2270,10 @@ textarea {
     }
 
     .schedule-template-list {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .compact-template-list {
         grid-template-columns: 1fr 1fr;
     }
 
@@ -2217,7 +2313,7 @@ textarea {
     }
 
     .analysis-tabs {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 
     .monthly-calendar-grid {
@@ -2228,12 +2324,25 @@ textarea {
         min-height: 72px;
         padding: 7px 5px;
     }
+
+    .schedule-template-item {
+        padding: 10px;
+    }
+
+    .schedule-template-title {
+        font-size: 14px;
+    }
+
+    .schedule-template-meta {
+        font-size: 11px;
+    }
 }
 
 @media (max-width: 600px) {
     .two-column,
     .compact-form-grid,
-    .setup-action-grid {
+    .onboarding-actions,
+    .tomorrow-action-buttons {
         grid-template-columns: 1fr;
     }
 
@@ -2250,7 +2359,8 @@ textarea {
     .habit-analysis-grid,
     .weekly-review-metrics,
     .habit-today-summary,
-    .month-plan-summary {
+    .month-plan-summary,
+    .today-plan-summary {
         grid-template-columns: 1fr;
     }
 
@@ -2287,16 +2397,16 @@ textarea {
         grid-column: 1 / -1;
     }
 
-    .schedule-template-header {
-        flex-direction: column;
+    .weekday-checkbox-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
 
-    .schedule-template-actions {
+    .reason-button-grid {
         grid-template-columns: 1fr;
     }
 
-    .weekday-checkbox-grid {
-        grid-template-columns: repeat(4, 1fr);
+    .time-split-input {
+        grid-template-columns: 1fr;
     }
 }
 
