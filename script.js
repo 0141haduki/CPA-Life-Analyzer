@@ -1,6 +1,6 @@
-// Life Growth Analyzer v9.0
+// Life Growth Analyzer v9.7
 
-console.log("Life Growth Analyzer v9.0 起動");
+console.log("Life Growth Analyzer v9.7 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -52,6 +52,9 @@ let historyFilter = "7";
 let habitFilter = "all";
 let activeConditionChartKey = "";
 let currentPageId = "todayPage";
+let activeAnalysisSectionId = "analysisWeekly";
+let pendingImportData = null;
+let pendingImportFileName = "";
 
 // ==============================
 // 共通
@@ -178,6 +181,14 @@ function getDatesInMonth(monthText) {
     return dates;
 }
 
+function getWeekdayNumber(dateText) {
+    const date = dateStringToDate(dateText);
+
+    if (!date) return null;
+
+    return date.getDay();
+}
+
 function getNumberOrNull(valueText) {
     if (valueText === "" || valueText === undefined || valueText === null) return null;
 
@@ -223,6 +234,19 @@ function normalizeTime(text) {
     return "";
 }
 
+function downloadJson(data, fileName) {
+    const jsonText = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonText], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
 // ==============================
 // ページ切り替え
 // ==============================
@@ -254,6 +278,31 @@ function setupPageTabs() {
         button.addEventListener("click", () => {
             const pageId = button.dataset.pageTarget;
             if (pageId) showPage(pageId);
+        });
+    });
+}
+
+function showAnalysisSection(sectionId) {
+    if (!$(sectionId)) return;
+
+    activeAnalysisSectionId = sectionId;
+
+    document.querySelectorAll(".analysis-section").forEach(section => {
+        section.classList.toggle("active-analysis-section", section.id === sectionId);
+    });
+
+    document.querySelectorAll(".analysis-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.analysisTarget === sectionId);
+    });
+
+    setTimeout(updateCharts, 80);
+}
+
+function setupAnalysisTabs() {
+    document.querySelectorAll(".analysis-tab").forEach(button => {
+        button.addEventListener("click", () => {
+            const target = button.dataset.analysisTarget;
+            if (target) showAnalysisSection(target);
         });
     });
 }
@@ -912,7 +961,7 @@ function renderSubjectSettingsList() {
 }
 
 // ==============================
-// 継続項目
+// 継続項目 v9.7
 // ==============================
 
 function normalizeHabits(raw) {
@@ -930,6 +979,9 @@ function normalizeHabits(raw) {
                 id: item.id || createId("habit"),
                 name,
                 type: item.type === "avoid" ? "avoid" : "action",
+                frequency: item.frequency || "daily",
+                weeklyTarget: Number(item.weeklyTarget || 0),
+                weekdays: Array.isArray(item.weekdays) ? item.weekdays.map(Number).filter(n => n >= 0 && n <= 6) : [],
                 createdAt: item.createdAt || new Date().toISOString()
             };
         })
@@ -1007,6 +1059,36 @@ function getHabitState(date, habitId) {
     return "pending";
 }
 
+function getHabitFrequencyText(habit) {
+    if (habit.frequency === "weekly_count") {
+        return `週${habit.weeklyTarget || 1}回`;
+    }
+
+    if (habit.frequency === "weekday") {
+        const labels = ["日", "月", "火", "水", "木", "金", "土"];
+        const text = habit.weekdays.length > 0
+            ? habit.weekdays.map(day => labels[day]).join("・")
+            : "曜日未指定";
+
+        return `曜日指定：${text}`;
+    }
+
+    return "毎日";
+}
+
+function isHabitDueOnDate(habit, date) {
+    if (habit.frequency === "weekday") {
+        const weekday = getWeekdayNumber(date);
+
+        if (weekday === null) return true;
+        if (!habit.weekdays || habit.weekdays.length === 0) return true;
+
+        return habit.weekdays.includes(weekday);
+    }
+
+    return true;
+}
+
 function getHabitStreakUntil(date, habitId) {
     let count = 0;
     let cursor = date;
@@ -1038,12 +1120,41 @@ function getHabitAchievementRate(habitId, days) {
     };
 }
 
+function getHabitWeeklyProgress(habit, date) {
+    const endDate = dateStringToDate(date);
+
+    if (!endDate) {
+        return { achieved: 0, target: habit.weeklyTarget || 1, rate: 0 };
+    }
+
+    const weekday = endDate.getDay();
+    const start = new Date(endDate);
+    start.setDate(start.getDate() - weekday);
+
+    const dates = [];
+
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        dates.push(dateToString(d));
+    }
+
+    const achieved = dates.filter(d => getHabitResult(d, habit.id) === true).length;
+    const target = habit.frequency === "weekly_count" ? Math.max(1, Number(habit.weeklyTarget || 1)) : dates.length;
+
+    return {
+        achieved,
+        target,
+        rate: Math.min(100, achieved / target * 100)
+    };
+}
+
 function getHabitAchievementCount(date) {
     return getHabits().filter(habit => getHabitResult(date, habit.id) === true).length;
 }
 
 function getHabitPendingCount(date) {
-    return getHabits().filter(habit => getHabitResult(date, habit.id) === null).length;
+    return getHabits().filter(habit => isHabitDueOnDate(habit, date) && getHabitResult(date, habit.id) === null).length;
 }
 
 function updateHabitTodaySummary(date) {
@@ -1064,6 +1175,19 @@ function updateHabitTodaySummary(date) {
 function getHabitStatusText(habit, date) {
     const result = getHabitResult(date, habit.id);
     const streak = getHabitStreakUntil(date, habit.id);
+
+    if (!isHabitDueOnDate(habit, date)) {
+        return "今日は曜日指定の対象外です。必要なら記録できます。";
+    }
+
+    if (habit.frequency === "weekly_count") {
+        const progress = getHabitWeeklyProgress(habit, date);
+
+        if (result === true) return `今日達成済み。今週 ${progress.achieved}/${progress.target} 回です。`;
+        if (result === false) return habit.type === "avoid" ? "今日は途切れた記録です。" : "今日は未達成の記録です。";
+
+        return `今週 ${progress.achieved}/${progress.target} 回。今日実行すると進捗が増えます。`;
+    }
 
     if (result === true) return `今日達成済み。現在 ${streak}日継続中。`;
     if (result === false) return habit.type === "avoid" ? "今日は途切れた記録です。" : "今日は未達成の記録です。";
@@ -1130,7 +1254,10 @@ function renderTodayHabitList() {
         item.innerHTML = `
             <div class="today-habit-header">
                 <span class="today-habit-name">${escapeHtml(habit.name)}</span>
-                <span class="today-habit-type ${typeClass}">${typeText}</span>
+                <div>
+                    <span class="today-habit-type ${typeClass}">${typeText}</span>
+                    <span class="habit-frequency-pill">${escapeHtml(getHabitFrequencyText(habit))}</span>
+                </div>
             </div>
             <p class="today-habit-status">${escapeHtml(getHabitStatusText(habit, date))}</p>
             <div class="today-habit-meta">
@@ -1166,17 +1293,38 @@ function renderTodayHabitList() {
     });
 }
 
+function getSelectedHabitWeekdays() {
+    return Array.from(document.querySelectorAll(".habit-weekday-checkbox:checked"))
+        .map(input => Number(input.value))
+        .filter(value => value >= 0 && value <= 6);
+}
+
 function addHabit() {
     const nameInput = $("newHabitName");
     const typeSelect = $("newHabitType");
+    const frequencySelect = $("newHabitFrequency");
+    const weeklyTargetInput = $("newHabitWeeklyTarget");
 
-    if (!nameInput || !typeSelect) return;
+    if (!nameInput || !typeSelect || !frequencySelect) return;
 
     const name = nameInput.value.trim();
     const type = typeSelect.value === "avoid" ? "avoid" : "action";
+    const frequency = frequencySelect.value || "daily";
+    const weeklyTarget = getNumberOrNull(weeklyTargetInput?.value || "");
+    const weekdays = getSelectedHabitWeekdays();
 
     if (!name) {
         alert("追加する継続項目名を入力してください。");
+        return;
+    }
+
+    if (frequency === "weekly_count" && (!weeklyTarget || weeklyTarget < 1 || weeklyTarget > 7)) {
+        alert("週◯回の目標回数は1〜7で入力してください。");
+        return;
+    }
+
+    if (frequency === "weekday" && weekdays.length === 0) {
+        alert("曜日指定の場合は、対象曜日を1つ以上選んでください。");
         return;
     }
 
@@ -1191,12 +1339,17 @@ function addHabit() {
         id: createId("habit"),
         name,
         type,
+        frequency,
+        weeklyTarget: frequency === "weekly_count" ? weeklyTarget : 0,
+        weekdays: frequency === "weekday" ? weekdays : [],
         createdAt: new Date().toISOString()
     });
 
     setHabits(habits);
 
     nameInput.value = "";
+    if (weeklyTargetInput) weeklyTargetInput.value = "";
+    document.querySelectorAll(".habit-weekday-checkbox").forEach(input => input.checked = false);
 
     renderHabitSettingsList();
     updateAllDisplays();
@@ -1244,7 +1397,7 @@ function renderHabitSettingsList() {
         item.innerHTML = `
             <div>
                 <span class="habit-setting-name">${escapeHtml(habit.name)}</span>
-                <span class="habit-setting-detail">${typeText}</span>
+                <span class="habit-setting-detail">${typeText} / ${escapeHtml(getHabitFrequencyText(habit))}</span>
             </div>
             <button type="button" class="habit-delete-button" data-habit-delete="${habit.id}">削除</button>
         `;
@@ -1258,7 +1411,7 @@ function renderHabitSettingsList() {
 }
 
 // ==============================
-// 予定テンプレート v9.0
+// 予定テンプレート v9.7
 // ==============================
 
 function normalizeScheduleTemplates(raw) {
@@ -1284,6 +1437,7 @@ function normalizeScheduleTemplates(raw) {
                 linkedSubject: item.linkedSubject || "",
                 linkedSubSubject: item.linkedSubSubject || "",
                 memo: item.memo || "",
+                usedCount: Number(item.usedCount || 0),
                 createdAt: item.createdAt || new Date().toISOString(),
                 updatedAt: item.updatedAt || new Date().toISOString()
             };
@@ -1321,7 +1475,7 @@ function getScheduleTemplateFromForm() {
     const schedule = getScheduleFormData();
 
     return {
-        id: "",
+        id: $("editingScheduleTemplateId")?.value || "",
         name: makeScheduleTemplateName(schedule),
         category: schedule.category || "その他",
         title: schedule.title || schedule.category || "予定",
@@ -1331,6 +1485,7 @@ function getScheduleTemplateFromForm() {
         linkedSubject: schedule.linkedSubject || "",
         linkedSubSubject: schedule.linkedSubSubject || "",
         memo: schedule.memo || "",
+        usedCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
@@ -1376,9 +1531,69 @@ function saveScheduleAsTemplate() {
     templates.push(template);
     setScheduleTemplates(templates);
 
+    if ($("editingScheduleTemplateId")) $("editingScheduleTemplateId").value = "";
+
     renderScheduleTemplateList();
     updateSetupChecklist();
     setText("scheduleStatus", `テンプレート化しました：${template.name}`);
+}
+
+function updateScheduleTemplateFromForm() {
+    const templateId = $("editingScheduleTemplateId")?.value || "";
+
+    if (!templateId) {
+        alert("編集中のテンプレートがありません。テンプレート一覧の「編集用」を押してください。");
+        return;
+    }
+
+    const templates = getScheduleTemplates();
+    const index = templates.findIndex(item => item.id === templateId);
+
+    if (index < 0) {
+        alert("更新対象のテンプレートが見つかりません。");
+        return;
+    }
+
+    const formTemplate = getScheduleTemplateFromForm();
+    const old = templates[index];
+
+    const customName = prompt("テンプレート名を確認してください。", old.name || formTemplate.name);
+
+    if (customName === null) return;
+
+    templates[index] = {
+        ...old,
+        ...formTemplate,
+        id: old.id,
+        name: customName.trim() || old.name || formTemplate.name,
+        usedCount: old.usedCount || 0,
+        createdAt: old.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+
+    setScheduleTemplates(templates);
+    renderScheduleTemplateList();
+    updateSetupChecklist();
+
+    if ($("editingScheduleTemplateId")) $("editingScheduleTemplateId").value = "";
+
+    setText("scheduleStatus", `テンプレートを更新しました：${templates[index].name}`);
+}
+
+function incrementTemplateUse(templateId) {
+    const templates = getScheduleTemplates();
+
+    const updated = templates.map(template => {
+        if (template.id !== templateId) return template;
+
+        return {
+            ...template,
+            usedCount: Number(template.usedCount || 0) + 1,
+            updatedAt: new Date().toISOString()
+        };
+    });
+
+    setScheduleTemplates(updated);
 }
 
 function applyScheduleTemplate(templateId) {
@@ -1403,7 +1618,11 @@ function applyScheduleTemplate(templateId) {
         memo: template.memo || ""
     });
 
-    setText("scheduleStatus", `テンプレートを反映しました：${template.name}`);
+    if ($("editingScheduleTemplateId")) $("editingScheduleTemplateId").value = "";
+
+    incrementTemplateUse(templateId);
+    renderScheduleTemplateList();
+    setText("scheduleStatus", `テンプレートを入力欄へ反映しました：${template.name}`);
     showPage("schedulePage");
 }
 
@@ -1431,6 +1650,7 @@ function addScheduleTemplateDirectly(templateId) {
     };
 
     saveScheduleItem(schedule);
+    incrementTemplateUse(templateId);
 
     setText("scheduleStatus", `テンプレートから予定を追加しました：${date} ${template.name}`);
     updateAllDisplays();
@@ -1441,8 +1661,27 @@ function editScheduleTemplate(templateId) {
 
     if (!template) return;
 
-    applyScheduleTemplate(templateId);
-    setText("scheduleStatus", `テンプレートを編集用に反映しました。修正後、「この内容をテンプレート化」で新規保存してください：${template.name}`);
+    const date = scheduleFocusDate || $("scheduleFocusDate")?.value || $("recordDate")?.value || getTodayString();
+
+    setScheduleFormData({
+        id: "",
+        date,
+        category: template.category || "その他",
+        title: template.title || "",
+        plannedStart: template.plannedStart || "",
+        plannedEnd: template.plannedEnd || "",
+        actualStart: "",
+        actualEnd: "",
+        place: template.place || "",
+        linkedSubject: template.linkedSubject || "",
+        linkedSubSubject: template.linkedSubSubject || "",
+        memo: template.memo || ""
+    });
+
+    if ($("editingScheduleTemplateId")) $("editingScheduleTemplateId").value = templateId;
+
+    setText("scheduleStatus", `テンプレート編集中：${template.name}。修正後「編集中のテンプレートを更新」を押してください。`);
+    showPage("schedulePage");
 }
 
 function deleteScheduleTemplate(templateId) {
@@ -1455,6 +1694,10 @@ function deleteScheduleTemplate(templateId) {
 
     setScheduleTemplates(templates.filter(item => item.id !== templateId));
 
+    if ($("editingScheduleTemplateId")?.value === templateId) {
+        $("editingScheduleTemplateId").value = "";
+    }
+
     renderScheduleTemplateList();
     updateSetupChecklist();
     setText("scheduleStatus", `テンプレートを削除しました：${target.name}`);
@@ -1465,14 +1708,19 @@ function renderScheduleTemplateList() {
 
     if (!list) return;
 
-    const templates = getScheduleTemplates();
+    const filter = $("templateCategoryFilter")?.value || "all";
+    const templates = getScheduleTemplates()
+        .filter(template => filter === "all" || template.category === filter)
+        .sort((a, b) => Number(b.usedCount || 0) - Number(a.usedCount || 0));
 
     list.innerHTML = "";
 
     if (templates.length === 0) {
         const empty = document.createElement("p");
         empty.className = "empty";
-        empty.textContent = "テンプレートはまだありません。予定作成カードで内容を入力し、「この内容をテンプレート化」を押してください。";
+        empty.textContent = filter === "all"
+            ? "テンプレートはまだありません。予定作成カードで内容を入力し、「この内容をテンプレート化」を押してください。"
+            : "このカテゴリのテンプレートはありません。";
         list.appendChild(empty);
         return;
     }
@@ -1494,7 +1742,7 @@ function renderScheduleTemplateList() {
             <div class="schedule-template-header">
                 <div>
                     <span class="schedule-template-title">${escapeHtml(template.name)}</span>
-                    <span class="schedule-template-meta">${escapeHtml(template.category)}：${escapeHtml(template.title)} / ${escapeHtml(timeText)}${escapeHtml(placeText)}${escapeHtml(linkedText)}</span>
+                    <span class="schedule-template-meta">${escapeHtml(template.category)}：${escapeHtml(template.title)} / ${escapeHtml(timeText)}${escapeHtml(placeText)}${escapeHtml(linkedText)} / 使用${Number(template.usedCount || 0)}回</span>
                 </div>
             </div>
             ${template.memo ? `<p class="schedule-template-memo">${escapeHtml(template.memo)}</p>` : ""}
@@ -1641,6 +1889,8 @@ function clearScheduleForm() {
         memo: ""
     });
 
+    if ($("editingScheduleTemplateId")) $("editingScheduleTemplateId").value = "";
+
     setText("scheduleStatus", "入力をクリアしました");
 }
 
@@ -1687,7 +1937,10 @@ function editSchedule(date, id) {
     if ($("scheduleFocusDate")) $("scheduleFocusDate").value = date;
 
     setScheduleFormData(target);
-    setText("scheduleStatus", `編集中：${date}`);
+
+    if ($("editingScheduleTemplateId")) $("editingScheduleTemplateId").value = "";
+
+    setText("scheduleStatus", `予定編集中：${date}`);
     showPage("schedulePage");
 }
 
@@ -1858,7 +2111,7 @@ function applyScheduleToRecord() {
 }
 
 // ==============================
-// タスク
+// タスク v9.7
 // ==============================
 
 function getTasks() {
@@ -1873,14 +2126,30 @@ function setTasks(tasks) {
     localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
 }
 
+function normalizeTask(task) {
+    return {
+        id: task.id || createId("task"),
+        date: task.date || getTodayString(),
+        category: task.category || "その他",
+        title: task.title || "",
+        memo: task.memo || "",
+        done: task.done === true,
+        priority: task.priority || "normal",
+        dueDate: task.dueDate || "",
+        createdAt: task.createdAt || new Date().toISOString(),
+        updatedAt: task.updatedAt || new Date().toISOString()
+    };
+}
+
 function getTasksForDate(date) {
     const tasks = getTasks();
 
-    return Array.isArray(tasks[date]) ? tasks[date] : [];
+    return Array.isArray(tasks[date]) ? tasks[date].map(normalizeTask) : [];
 }
 
 function saveTaskItem(task) {
-    const date = task.date;
+    const normalized = normalizeTask(task);
+    const date = normalized.date;
 
     if (!date) return;
 
@@ -1889,10 +2158,10 @@ function saveTaskItem(task) {
     if (!Array.isArray(tasks[date])) tasks[date] = [];
 
     if (!task.id) {
-        task.id = createId("task");
-        task.done = task.done === true;
-        task.createdAt = new Date().toISOString();
-        tasks[date].push(task);
+        normalized.id = createId("task");
+        normalized.done = task.done === true;
+        normalized.createdAt = new Date().toISOString();
+        tasks[date].push(normalized);
     } else {
         let oldDone = false;
 
@@ -1909,10 +2178,10 @@ function saveTaskItem(task) {
             if (tasks[key].length === 0) delete tasks[key];
         });
 
-        task.done = task.done === true || oldDone;
+        normalized.done = task.done === true || oldDone;
 
         if (!Array.isArray(tasks[date])) tasks[date] = [];
-        tasks[date].push(task);
+        tasks[date].push(normalized);
     }
 
     setTasks(tasks);
@@ -1957,16 +2226,22 @@ function getTaskFormData() {
         category: $("taskCategory")?.value || "その他",
         title: $("taskTitle")?.value.trim() || "",
         memo: $("taskMemo")?.value.trim() || "",
+        priority: $("taskPriority")?.value || "normal",
+        dueDate: $("taskDueDate")?.value || "",
         updatedAt: new Date().toISOString()
     };
 }
 
 function setTaskFormData(task) {
-    if ($("editingTaskId")) $("editingTaskId").value = task.id || "";
-    if ($("taskDate")) $("taskDate").value = task.date || scheduleFocusDate || getTodayString();
-    if ($("taskCategory")) $("taskCategory").value = task.category || "その他";
-    if ($("taskTitle")) $("taskTitle").value = task.title || "";
-    if ($("taskMemo")) $("taskMemo").value = task.memo || "";
+    const normalized = normalizeTask(task);
+
+    if ($("editingTaskId")) $("editingTaskId").value = normalized.id || "";
+    if ($("taskDate")) $("taskDate").value = normalized.date || scheduleFocusDate || getTodayString();
+    if ($("taskCategory")) $("taskCategory").value = normalized.category || "その他";
+    if ($("taskTitle")) $("taskTitle").value = normalized.title || "";
+    if ($("taskMemo")) $("taskMemo").value = normalized.memo || "";
+    if ($("taskPriority")) $("taskPriority").value = normalized.priority || "normal";
+    if ($("taskDueDate")) $("taskDueDate").value = normalized.dueDate || "";
 }
 
 function clearTaskForm() {
@@ -1975,7 +2250,9 @@ function clearTaskForm() {
         date: scheduleFocusDate || $("recordDate")?.value || getTodayString(),
         category: "学習",
         title: "",
-        memo: ""
+        memo: "",
+        priority: "normal",
+        dueDate: ""
     });
 
     setText("taskStatus", "入力をクリアしました");
@@ -2016,7 +2293,7 @@ function editTask(date, id) {
     if ($("scheduleFocusDate")) $("scheduleFocusDate").value = date;
 
     setTaskFormData(target);
-    setText("taskStatus", `編集中：${date}`);
+    setText("taskStatus", `タスク編集中：${date}`);
     showPage("schedulePage");
 }
 
@@ -2038,45 +2315,68 @@ function duplicateTaskFromForm() {
     updateAllDisplays();
 }
 
-function renderTaskList(containerId, date) {
-    const list = $(containerId);
+function rolloverTaskFromForm() {
+    const task = getTaskFormData();
 
-    if (!list) return;
-
-    const tasks = getTasksForDate(date);
-
-    list.innerHTML = "";
-
-    if (tasks.length === 0) {
-        const empty = document.createElement("p");
-        empty.className = "empty";
-        empty.textContent = "タスクはありません。";
-        list.appendChild(empty);
+    if (!task.title) {
+        alert("繰り越すタスクがありません。先にタスクを編集するか入力してください。");
         return;
     }
 
-    tasks.forEach(task => {
-        const item = document.createElement("div");
-        item.className = `today-task-item ${task.done ? "done" : ""}`;
+    const nextDate = addDays(task.date || scheduleFocusDate || getTodayString(), 1);
 
-        item.innerHTML = `
-            <div class="today-task-row">
-                <input type="checkbox" class="today-task-checkbox" data-task-toggle="${task.id}" data-task-date="${date}" ${task.done ? "checked" : ""}>
-                <div>
-                    <span class="today-task-title">${escapeHtml(task.title)}</span>
-                    <span class="today-task-meta">${escapeHtml(task.category)}${task.memo ? " / " + escapeHtml(task.memo) : ""}</span>
-                </div>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <button type="button" class="inline-small-button" data-task-edit="${task.id}" data-task-date="${date}">編集</button>
-                    <button type="button" class="inline-small-button" data-task-copy="${task.id}" data-task-date="${date}">複製</button>
-                    <button type="button" class="inline-danger-button" data-task-delete="${task.id}" data-task-date="${date}">削除</button>
-                </div>
+    task.id = "";
+    task.date = nextDate;
+    task.done = false;
+
+    saveTaskItem(task);
+
+    setText("taskStatus", `翌日に繰り越しました：${nextDate} ${task.title}`);
+    updateAllDisplays();
+}
+
+function getPriorityText(priority) {
+    if (priority === "high") return "重要度：高";
+    if (priority === "low") return "重要度：低";
+
+    return "重要度：通常";
+}
+
+function getDueClass(dueDate) {
+    if (!dueDate) return "";
+
+    const today = getTodayString();
+
+    if (dueDate < today) return "overdue";
+    if (dueDate === today) return "today";
+
+    return "";
+}
+
+function renderTaskItemHtml(task, date) {
+    const dueClass = getDueClass(task.dueDate);
+    const priorityClass = task.priority === "high" ? "high" : task.priority === "low" ? "low" : "";
+
+    return `
+        <div class="today-task-row">
+            <input type="checkbox" class="today-task-checkbox" data-task-toggle="${task.id}" data-task-date="${date}" ${task.done ? "checked" : ""}>
+            <div>
+                <span class="today-task-title">${escapeHtml(task.title)}</span>
+                <span class="today-task-meta">${escapeHtml(task.category)}${task.memo ? " / " + escapeHtml(task.memo) : ""}</span>
+                <span class="task-priority-pill ${priorityClass}">${getPriorityText(task.priority)}</span>
+                ${task.dueDate ? `<span class="task-due-pill ${dueClass}">期限：${task.dueDate}</span>` : ""}
             </div>
-        `;
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button type="button" class="inline-small-button" data-task-edit="${task.id}" data-task-date="${date}">編集</button>
+                <button type="button" class="inline-small-button" data-task-copy="${task.id}" data-task-date="${date}">複製</button>
+                <button type="button" class="inline-small-button" data-task-rollover="${task.id}" data-task-date="${date}">翌日へ</button>
+                <button type="button" class="inline-danger-button" data-task-delete="${task.id}" data-task-date="${date}">削除</button>
+            </div>
+        </div>
+    `;
+}
 
-        list.appendChild(item);
-    });
-
+function attachTaskListEvents(list) {
     list.querySelectorAll("[data-task-toggle]").forEach(input => {
         input.addEventListener("change", () => toggleTaskDone(input.dataset.taskDate, input.dataset.taskToggle));
     });
@@ -2099,6 +2399,21 @@ function renderTaskList(containerId, date) {
         });
     });
 
+    list.querySelectorAll("[data-task-rollover]").forEach(button => {
+        button.addEventListener("click", () => {
+            const source = getTasksForDate(button.dataset.taskDate).find(item => item.id === button.dataset.taskRollover);
+
+            if (!source) return;
+
+            const nextDate = addDays(source.date, 1);
+            const copy = { ...source, id: "", done: false, date: nextDate };
+
+            saveTaskItem(copy);
+            setText("taskStatus", `翌日に繰り越しました：${nextDate} ${source.title}`);
+            updateAllDisplays();
+        });
+    });
+
     list.querySelectorAll("[data-task-delete]").forEach(button => {
         button.addEventListener("click", () => {
             if (confirm("このタスクを削除しますか？")) {
@@ -2106,6 +2421,33 @@ function renderTaskList(containerId, date) {
             }
         });
     });
+}
+
+function renderTaskList(containerId, date) {
+    const list = $(containerId);
+
+    if (!list) return;
+
+    const tasks = getTasksForDate(date);
+
+    list.innerHTML = "";
+
+    if (tasks.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "タスクはありません。";
+        list.appendChild(empty);
+        return;
+    }
+
+    tasks.forEach(task => {
+        const item = document.createElement("div");
+        item.className = `today-task-item ${task.done ? "done" : ""}`;
+        item.innerHTML = renderTaskItemHtml(task, date);
+        list.appendChild(item);
+    });
+
+    attachTaskListEvents(list);
 }
 
 function renderTodayTaskList() {
@@ -2120,6 +2462,58 @@ function renderFocusedTaskList() {
     renderTaskList("focusedTaskList", date);
 }
 
+function getAllTasksFlat() {
+    const tasks = getTasks();
+    const result = [];
+
+    Object.keys(tasks).forEach(date => {
+        if (!Array.isArray(tasks[date])) return;
+
+        tasks[date].forEach(task => {
+            result.push(normalizeTask({ ...task, date }));
+        });
+    });
+
+    return result;
+}
+
+function renderPendingTaskList() {
+    const list = $("pendingTaskList");
+
+    if (!list) return;
+
+    const pending = getAllTasksFlat()
+        .filter(task => !task.done)
+        .sort((a, b) => {
+            const priorityScore = { high: 0, normal: 1, low: 2 };
+            const dueA = a.dueDate || "9999-99-99";
+            const dueB = b.dueDate || "9999-99-99";
+
+            if (dueA !== dueB) return dueA.localeCompare(dueB);
+
+            return (priorityScore[a.priority] ?? 1) - (priorityScore[b.priority] ?? 1);
+        });
+
+    list.innerHTML = "";
+
+    if (pending.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "未完了タスクはありません。";
+        list.appendChild(empty);
+        return;
+    }
+
+    pending.slice(0, 30).forEach(task => {
+        const item = document.createElement("div");
+        item.className = "pending-task-item";
+        item.innerHTML = renderTaskItemHtml(task, task.date);
+        list.appendChild(item);
+    });
+
+    attachTaskListEvents(list);
+}
+
 // ==============================
 // 一括入力
 // ==============================
@@ -2130,6 +2524,12 @@ function resolveBulkDate(text) {
     const currentYear = Number(current.slice(0, 4));
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+    const ymdSlash = raw.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+
+    if (ymdSlash) {
+        return `${Number(ymdSlash[1])}-${String(Number(ymdSlash[2])).padStart(2, "0")}-${String(Number(ymdSlash[3])).padStart(2, "0")}`;
+    }
 
     const md = raw.match(/^(\d{1,2})\/(\d{1,2})$/);
 
@@ -2188,6 +2588,8 @@ function inferBulkScheduleFromLine(line) {
                 title,
                 memo: "",
                 done: false,
+                priority: "normal",
+                dueDate: "",
                 updatedAt: new Date().toISOString()
             }
         };
@@ -2276,6 +2678,8 @@ function inferBulkScheduleFromLine(line) {
             title: parts.slice(1).join(" ").trim() || "タスク",
             memo: "",
             done: false,
+            priority: "normal",
+            dueDate: "",
             updatedAt: new Date().toISOString()
         }
     };
@@ -2431,7 +2835,7 @@ function renderMonthlyPlanList() {
 
     dates.forEach(date => {
         const daySchedules = Array.isArray(schedules[date]) ? schedules[date] : [];
-        const dayTasks = Array.isArray(tasks[date]) ? tasks[date] : [];
+        const dayTasks = Array.isArray(tasks[date]) ? tasks[date].map(normalizeTask) : [];
 
         if (daySchedules.length === 0 && dayTasks.length === 0) return;
 
@@ -3518,6 +3922,7 @@ function updateHabitAnalysis() {
         const streak = getHabitStreakUntil(date, habit.id);
         const rate7 = getHabitAchievementRate(habit.id, 7);
         const rate30 = getHabitAchievementRate(habit.id, 30);
+        const weeklyProgress = getHabitWeeklyProgress(habit, date);
 
         if (streak > bestStreak) {
             bestStreak = streak;
@@ -3528,7 +3933,7 @@ function updateHabitAnalysis() {
         item.className = "habit-analysis-item";
 
         item.innerHTML = `
-            <p class="habit-analysis-title">${escapeHtml(habit.name)}</p>
+            <p class="habit-analysis-title">${escapeHtml(habit.name)} <span class="habit-frequency-pill">${escapeHtml(getHabitFrequencyText(habit))}</span></p>
             <div class="habit-analysis-grid">
                 <div class="habit-metric">
                     <span class="habit-metric-label">現在の継続</span>
@@ -3539,11 +3944,11 @@ function updateHabitAnalysis() {
                     <span class="habit-metric-value">${rate7.rate.toFixed(0)}%</span>
                 </div>
                 <div class="habit-metric">
-                    <span class="habit-metric-label">直近30日達成率</span>
-                    <span class="habit-metric-value">${rate30.rate.toFixed(0)}%</span>
+                    <span class="habit-metric-label">週進捗</span>
+                    <span class="habit-metric-value">${weeklyProgress.achieved}/${weeklyProgress.target}</span>
                 </div>
             </div>
-            <p class="habit-effect-text">習慣と体調の比較分析は、達成日・未達成日の記録が増えるほど安定します。</p>
+            <p class="habit-effect-text">30日達成率：${rate30.rate.toFixed(0)}%。習慣と体調の比較分析は、達成日・未達成日の記録が増えるほど安定します。</p>
         `;
 
         list.appendChild(item);
@@ -3702,7 +4107,7 @@ function renderSimpleFactor(containerId, lines) {
         item.innerHTML = `
             <div>
                 <span class="factor-name">${escapeHtml(line)}</span>
-                <span class="factor-detail">v9.0簡易分析</span>
+                <span class="factor-detail">v9.7簡易分析</span>
             </div>
             <span class="factor-score">確認</span>
         `;
@@ -3723,7 +4128,7 @@ function updateCorrelationAnalysis() {
 
     setText(
         "correlationInsight",
-        "v9.0では、予定・タスク・勤務時間も分析対象に入れています。まずは予定過多・勤務時間・タスク完了率と睡眠・疲労・集中力の関係を確認します。"
+        "v9.7では、予定・タスク・勤務時間も分析対象に入れています。まずは予定過多・勤務時間・タスク完了率と睡眠・疲労・集中力の関係を確認します。"
     );
 
     renderSimpleFactor("studyFactorRanking", [
@@ -4299,7 +4704,7 @@ function buildCurrentDayText(date, record) {
         "【今日のタスク】",
         tasks.length === 0
             ? "タスクなし"
-            : tasks.map(task => `${task.done ? "済" : "未"}：${task.category} ${task.title}${task.memo ? " / " + task.memo : ""}`).join("\n"),
+            : tasks.map(task => `${task.done ? "済" : "未"}：${task.category} ${task.title}${task.memo ? " / " + task.memo : ""}${task.priority ? " / " + getPriorityText(task.priority) : ""}${task.dueDate ? " / 期限：" + task.dueDate : ""}`).join("\n"),
         "",
         "【睡眠】",
         `予定就寝：${valueOrDash(record.plannedBedtime)}`,
@@ -4329,7 +4734,7 @@ function buildCurrentDayText(date, record) {
             const result = getHabitResult(date, habit.id);
             const resultText = result === true ? "達成" : result === false ? "未達成・途切れた" : "未記録";
 
-            return `${habit.name}：${resultText}`;
+            return `${habit.name}：${resultText} / ${getHabitFrequencyText(habit)}`;
         }).join("\n") || "継続項目なし",
         "",
         "【メモ】",
@@ -4760,8 +5165,147 @@ function updateSetupChecklist() {
 }
 
 // ==============================
-// 削除・バックアップ
+// データ削除・バックアップ v9.7
 // ==============================
+
+function buildFullBackupData(versionLabel = "9.7") {
+    return {
+        appName: "Life Growth Analyzer",
+        version: versionLabel,
+        exportedAt: new Date().toISOString(),
+        settings: getSettings(),
+        subjects: getSubjectConfigs(),
+        goal: getGoal(),
+        habits: getHabits(),
+        habitRecords: getHabitRecords(),
+        schedules: getSchedules(),
+        tasks: getTasks(),
+        scheduleTemplates: getScheduleTemplates(),
+        records: getRecords()
+    };
+}
+
+function exportData() {
+    const backupData = buildFullBackupData("9.7");
+    const fileName = `life-growth-analyzer-backup-${getTodayString()}.json`;
+
+    downloadJson(backupData, fileName);
+
+    updateSaveStatus(`バックアップを作成しました：${fileName}`, false);
+    setText("backupStatus", `バックアップを作成しました：${fileName}`);
+}
+
+function exportTemplatesOnly() {
+    const data = {
+        appName: "Life Growth Analyzer",
+        version: "9.7",
+        exportType: "templates",
+        exportedAt: new Date().toISOString(),
+        scheduleTemplates: getScheduleTemplates()
+    };
+
+    const fileName = `life-growth-analyzer-templates-${getTodayString()}.json`;
+
+    downloadJson(data, fileName);
+    setText("backupStatus", `テンプレートだけバックアップしました：${fileName}`);
+}
+
+function exportSettingsOnly() {
+    const data = {
+        appName: "Life Growth Analyzer",
+        version: "9.7",
+        exportType: "settings",
+        exportedAt: new Date().toISOString(),
+        settings: getSettings(),
+        subjects: getSubjectConfigs(),
+        goal: getGoal(),
+        habits: getHabits()
+    };
+
+    const fileName = `life-growth-analyzer-settings-${getTodayString()}.json`;
+
+    downloadJson(data, fileName);
+    setText("backupStatus", `設定だけバックアップしました：${fileName}`);
+}
+
+function autoBackupBeforeDanger(operationName) {
+    const data = buildFullBackupData(`9.7-auto-before-${operationName}`);
+    const fileName = `life-growth-analyzer-auto-backup-before-${operationName}-${getTodayString()}.json`;
+
+    downloadJson(data, fileName);
+
+    return fileName;
+}
+
+function refreshAfterDataChange(message) {
+    loadSettingsToForm();
+    loadSubjectsToUI();
+    loadGoalToForm();
+    renderHabitSettingsList();
+    renderScheduleTemplateList();
+    updateAllDisplays();
+
+    setText("dataManagementStatus", message);
+    setText("backupStatus", message);
+    updateSaveStatus(message, false);
+}
+
+function clearDataPart(kind) {
+    const labels = {
+        records: "日次記録",
+        schedules: "予定",
+        tasks: "タスク",
+        subjects: "取り組み項目",
+        habits: "継続項目",
+        templates: "予定テンプレート",
+        all: "全データ"
+    };
+
+    const label = labels[kind] || kind;
+
+    if (!confirm(`${label}を削除します。\n削除前に自動バックアップを作成します。\n実行しますか？`)) return;
+
+    const backupFileName = autoBackupBeforeDanger(`clear-${kind}`);
+
+    if (kind === "records") {
+        localStorage.removeItem(STORAGE_KEY);
+    } else if (kind === "schedules") {
+        localStorage.removeItem(SCHEDULE_KEY);
+    } else if (kind === "tasks") {
+        localStorage.removeItem(TASKS_KEY);
+    } else if (kind === "subjects") {
+        localStorage.removeItem(SUBJECTS_KEY);
+        localStorage.removeItem(OLD_SUBJECTS_KEY);
+    } else if (kind === "habits") {
+        localStorage.removeItem(HABITS_KEY);
+        localStorage.removeItem(HABIT_RECORDS_KEY);
+    } else if (kind === "templates") {
+        localStorage.removeItem(SCHEDULE_TEMPLATES_KEY);
+    } else if (kind === "all") {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LAST_DATE_KEY);
+        localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem(SUBJECTS_KEY);
+        localStorage.removeItem(OLD_SUBJECTS_KEY);
+        localStorage.removeItem(GOAL_KEY);
+        localStorage.removeItem(HABITS_KEY);
+        localStorage.removeItem(HABIT_RECORDS_KEY);
+        localStorage.removeItem(SCHEDULE_KEY);
+        localStorage.removeItem(TASKS_KEY);
+        localStorage.removeItem(SCHEDULE_TEMPLATES_KEY);
+    }
+
+    if (kind === "all" || kind === "records") {
+        const today = getTodayString();
+        if ($("recordDate")) $("recordDate").value = today;
+        currentDate = today;
+        scheduleFocusDate = today;
+        clearForm();
+        applyDefaultPlanToForm();
+    }
+
+    refreshAfterDataChange(`${label}を削除しました。自動バックアップ：${backupFileName}`);
+}
 
 function updateDeleteButton() {
     const button = $("deleteRecordButton");
@@ -4800,38 +5344,59 @@ function deleteCurrentRecord() {
     updateAllDisplays();
 }
 
-function exportData() {
-    const backupData = {
-        appName: "Life Growth Analyzer",
-        version: "9.0",
-        exportedAt: new Date().toISOString(),
-        settings: getSettings(),
-        subjects: getSubjectConfigs(),
-        goal: getGoal(),
-        habits: getHabits(),
-        habitRecords: getHabitRecords(),
-        schedules: getSchedules(),
-        tasks: getTasks(),
-        scheduleTemplates: getScheduleTemplates(),
-        records: getRecords()
+function summarizeImportData(imported) {
+    const records = imported.records && typeof imported.records === "object" ? imported.records : imported;
+    const schedules = imported.schedules && typeof imported.schedules === "object" ? imported.schedules : {};
+    const tasks = imported.tasks && typeof imported.tasks === "object" ? imported.tasks : {};
+    const scheduleTemplates = Array.isArray(imported.scheduleTemplates) ? imported.scheduleTemplates : [];
+    const subjects = Array.isArray(imported.subjects) ? imported.subjects : [];
+    const habits = Array.isArray(imported.habits) ? imported.habits : [];
+
+    return {
+        version: imported.version || "不明",
+        exportType: imported.exportType || "full",
+        recordsCount: records && typeof records === "object" && !Array.isArray(records) ? Object.keys(records).length : 0,
+        scheduleDateCount: Object.keys(schedules).length,
+        taskDateCount: Object.keys(tasks).length,
+        templateCount: scheduleTemplates.length,
+        subjectCount: subjects.length,
+        habitCount: habits.length,
+        hasSettings: Boolean(imported.settings),
+        hasGoal: Boolean(imported.goal)
     };
-
-    const jsonText = JSON.stringify(backupData, null, 2);
-    const blob = new Blob([jsonText], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const fileName = `life-growth-analyzer-backup-${getTodayString()}.json`;
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.click();
-
-    URL.revokeObjectURL(url);
-
-    updateSaveStatus(`バックアップを作成しました：${fileName}`, false);
 }
 
-function importDataFromFile(file) {
+function showImportPreview(imported, fileName) {
+    const box = $("importPreviewBox");
+
+    if (!box) return;
+
+    const summary = summarizeImportData(imported);
+
+    box.innerHTML = `
+        <span class="import-preview-title">復元ファイル確認：${escapeHtml(fileName)}</span>
+        <ul class="import-preview-list">
+            <li>バージョン：${escapeHtml(summary.version)}</li>
+            <li>種類：${escapeHtml(summary.exportType)}</li>
+            <li>日次記録：${summary.recordsCount}件</li>
+            <li>予定がある日：${summary.scheduleDateCount}日</li>
+            <li>タスクがある日：${summary.taskDateCount}日</li>
+            <li>予定テンプレート：${summary.templateCount}件</li>
+            <li>取り組み項目：${summary.subjectCount}件</li>
+            <li>継続項目：${summary.habitCount}件</li>
+            <li>基本睡眠予定：${summary.hasSettings ? "あり" : "なし"}</li>
+            <li>目標設定：${summary.hasGoal ? "あり" : "なし"}</li>
+        </ul>
+        <p class="import-preview-warning">
+            復元すると現在の同種データは上書きされます。実行前に現在データの自動バックアップを作成します。
+        </p>
+    `;
+
+    if ($("confirmImportButton")) $("confirmImportButton").disabled = false;
+    if ($("cancelImportButton")) $("cancelImportButton").disabled = false;
+}
+
+function prepareImportFromFile(file) {
     if (!file) return;
 
     const reader = new FileReader();
@@ -4839,44 +5404,17 @@ function importDataFromFile(file) {
     reader.onload = event => {
         try {
             const imported = JSON.parse(event.target.result);
-            const records = imported.records && typeof imported.records === "object" ? imported.records : imported;
 
-            if (!records || typeof records !== "object" || Array.isArray(records)) {
+            if (!imported || typeof imported !== "object" || Array.isArray(imported)) {
                 alert("復元できません。JSONの形式が正しくありません。");
                 return;
             }
 
-            const count = Object.keys(records).length;
+            pendingImportData = imported;
+            pendingImportFileName = file.name || "選択ファイル";
 
-            if (!confirm(`JSONファイルから ${count} 件の記録を復元します。\n現在のデータは上書きされます。\n実行しますか？`)) return;
-
-            setRecords(records);
-
-            if (imported.settings) setSettings(imported.settings);
-            if (imported.subjects) setSubjectConfigs(imported.subjects);
-            if (imported.goal) setGoal(imported.goal);
-            if (imported.habits) setHabits(imported.habits);
-            if (imported.habitRecords) setHabitRecords(imported.habitRecords);
-            if (imported.schedules) setSchedules(imported.schedules);
-            if (imported.tasks) setTasks(imported.tasks);
-            if (imported.scheduleTemplates) setScheduleTemplates(imported.scheduleTemplates);
-
-            loadSettingsToForm();
-            loadSubjectsToUI();
-            loadGoalToForm();
-            renderHabitSettingsList();
-            renderScheduleTemplateList();
-
-            const dates = Object.keys(getRecords()).sort().reverse();
-            const nextDate = dates[0] || getTodayString();
-
-            if ($("recordDate")) $("recordDate").value = nextDate;
-
-            loadRecord(nextDate);
-            updateSetupChecklist();
-            updateSaveStatus(`復元しました：${count}件`, false);
-
-            alert("復元が完了しました。");
+            showImportPreview(imported, pendingImportFileName);
+            setText("backupStatus", "復元内容を確認してください。");
         } catch (error) {
             console.error(error);
             alert("復元に失敗しました。JSONファイルを確認してください。");
@@ -4884,6 +5422,79 @@ function importDataFromFile(file) {
     };
 
     reader.readAsText(file);
+}
+
+function cancelImport() {
+    pendingImportData = null;
+    pendingImportFileName = "";
+
+    if ($("importPreviewBox")) {
+        $("importPreviewBox").innerHTML = `<p class="empty">復元ファイルを選ぶと、内容確認を表示します。</p>`;
+    }
+
+    if ($("confirmImportButton")) $("confirmImportButton").disabled = true;
+    if ($("cancelImportButton")) $("cancelImportButton").disabled = true;
+    if ($("importFile")) $("importFile").value = "";
+
+    setText("backupStatus", "復元をキャンセルしました。");
+}
+
+function confirmImportData() {
+    if (!pendingImportData) {
+        alert("復元するデータが選択されていません。");
+        return;
+    }
+
+    const imported = pendingImportData;
+    const summary = summarizeImportData(imported);
+
+    if (!confirm(`復元を実行します。\nファイル：${pendingImportFileName}\n日次記録：${summary.recordsCount}件\n予定テンプレート：${summary.templateCount}件\n\n現在データの自動バックアップ作成後に復元します。`)) {
+        return;
+    }
+
+    const backupFileName = autoBackupBeforeDanger("import");
+
+    if (imported.exportType === "templates") {
+        setScheduleTemplates(imported.scheduleTemplates || []);
+    } else if (imported.exportType === "settings") {
+        if (imported.settings) setSettings(imported.settings);
+        if (imported.subjects) setSubjectConfigs(imported.subjects);
+        if (imported.goal) setGoal(imported.goal);
+        if (imported.habits) setHabits(imported.habits);
+    } else {
+        const records = imported.records && typeof imported.records === "object" ? imported.records : imported;
+
+        if (records && typeof records === "object" && !Array.isArray(records)) setRecords(records);
+
+        if (imported.settings) setSettings(imported.settings);
+        if (imported.subjects) setSubjectConfigs(imported.subjects);
+        if (imported.goal) setGoal(imported.goal);
+        if (imported.habits) setHabits(imported.habits);
+        if (imported.habitRecords) setHabitRecords(imported.habitRecords);
+        if (imported.schedules) setSchedules(imported.schedules);
+        if (imported.tasks) setTasks(imported.tasks);
+        if (imported.scheduleTemplates) setScheduleTemplates(imported.scheduleTemplates);
+    }
+
+    loadSettingsToForm();
+    loadSubjectsToUI();
+    loadGoalToForm();
+    renderHabitSettingsList();
+    renderScheduleTemplateList();
+
+    const dates = Object.keys(getRecords()).sort().reverse();
+    const nextDate = dates[0] || getTodayString();
+
+    if ($("recordDate")) $("recordDate").value = nextDate;
+
+    loadRecord(nextDate);
+    cancelImport();
+
+    updateSetupChecklist();
+    updateSaveStatus(`復元しました。事前バックアップ：${backupFileName}`, false);
+    setText("backupStatus", `復元しました。事前バックアップ：${backupFileName}`);
+
+    alert("復元が完了しました。");
 }
 
 // ==============================
@@ -4968,6 +5579,7 @@ function setupScheduleFocusEvents() {
 function setupScheduleEvents() {
     if ($("saveScheduleButton")) $("saveScheduleButton").addEventListener("click", saveScheduleFromForm);
     if ($("saveScheduleAsTemplateButton")) $("saveScheduleAsTemplateButton").addEventListener("click", saveScheduleAsTemplate);
+    if ($("updateScheduleTemplateButton")) $("updateScheduleTemplateButton").addEventListener("click", updateScheduleTemplateFromForm);
     if ($("duplicateScheduleButton")) $("duplicateScheduleButton").addEventListener("click", duplicateScheduleFromForm);
     if ($("clearScheduleFormButton")) $("clearScheduleFormButton").addEventListener("click", clearScheduleForm);
     if ($("applyScheduleToRecordButton")) $("applyScheduleToRecordButton").addEventListener("click", applyScheduleToRecord);
@@ -4975,6 +5587,10 @@ function setupScheduleEvents() {
 
     if ($("scheduleLinkedSubject")) {
         $("scheduleLinkedSubject").addEventListener("change", () => updateScheduleLinkedSubSubjectOptions(""));
+    }
+
+    if ($("templateCategoryFilter")) {
+        $("templateCategoryFilter").addEventListener("change", renderScheduleTemplateList);
     }
 
     if ($("monthPlanInput")) {
@@ -4988,6 +5604,7 @@ function setupScheduleEvents() {
 function setupTaskEvents() {
     if ($("saveTaskButton")) $("saveTaskButton").addEventListener("click", saveTaskFromForm);
     if ($("duplicateTaskButton")) $("duplicateTaskButton").addEventListener("click", duplicateTaskFromForm);
+    if ($("rolloverTaskButton")) $("rolloverTaskButton").addEventListener("click", rolloverTaskFromForm);
     if ($("clearTaskFormButton")) $("clearTaskFormButton").addEventListener("click", clearTaskForm);
 }
 
@@ -5078,13 +5695,26 @@ function setupCorrelationEvents() {
 
 function setupBackupEvents() {
     if ($("exportButton")) $("exportButton").addEventListener("click", exportData);
+    if ($("exportTemplatesButton")) $("exportTemplatesButton").addEventListener("click", exportTemplatesOnly);
+    if ($("exportSettingsButton")) $("exportSettingsButton").addEventListener("click", exportSettingsOnly);
+    if ($("confirmImportButton")) $("confirmImportButton").addEventListener("click", confirmImportData);
+    if ($("cancelImportButton")) $("cancelImportButton").addEventListener("click", cancelImport);
 
     if ($("importFile")) {
         $("importFile").addEventListener("change", event => {
-            importDataFromFile(event.target.files[0]);
-            event.target.value = "";
+            prepareImportFromFile(event.target.files[0]);
         });
     }
+}
+
+function setupDataManagementEvents() {
+    if ($("clearDailyRecordsButton")) $("clearDailyRecordsButton").addEventListener("click", () => clearDataPart("records"));
+    if ($("clearSchedulesButton")) $("clearSchedulesButton").addEventListener("click", () => clearDataPart("schedules"));
+    if ($("clearTasksButton")) $("clearTasksButton").addEventListener("click", () => clearDataPart("tasks"));
+    if ($("clearSubjectsButton")) $("clearSubjectsButton").addEventListener("click", () => clearDataPart("subjects"));
+    if ($("clearHabitsButton")) $("clearHabitsButton").addEventListener("click", () => clearDataPart("habits"));
+    if ($("clearTemplatesButton")) $("clearTemplatesButton").addEventListener("click", () => clearDataPart("templates"));
+    if ($("clearAllDataButton")) $("clearAllDataButton").addEventListener("click", () => clearDataPart("all"));
 }
 
 function setupAiTextEvents() {
@@ -5122,6 +5752,7 @@ function updateAllDisplays() {
     renderTodayTaskList();
     renderFocusedScheduleList();
     renderFocusedTaskList();
+    renderPendingTaskList();
     renderMonthlyPlanList();
     renderHistory();
     renderRecordCalendar();
@@ -5153,6 +5784,7 @@ window.addEventListener("load", () => {
     }
 
     setupPageTabs();
+    setupAnalysisTabs();
 
     loadSettingsToForm();
     loadSubjectsToUI();
@@ -5184,6 +5816,7 @@ window.addEventListener("load", () => {
     setupTaskEvents();
     setupDeleteEvent();
     setupBackupEvents();
+    setupDataManagementEvents();
     setupHistoryFilterEvents();
     setupSettingsEvents();
     setupSubjectEvents();
@@ -5193,8 +5826,9 @@ window.addEventListener("load", () => {
     setupChartEvents();
     setupCorrelationEvents();
 
+    showAnalysisSection("analysisWeekly");
     showPage("todayPage");
     updateAllDisplays();
 
-    console.log("Life Growth Analyzer v9.0 初期化完了");
+    console.log("Life Growth Analyzer v9.7 初期化完了");
 });
