@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life Growth Analyzer v8.5</title>
+    <title>Life Growth Analyzer v9.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -35,6 +35,41 @@
             <section class="section-label-card">
                 <h2>今日</h2>
                 <p>毎日使う入力だけを集約します。</p>
+            </section>
+
+            <section class="card setup-card" id="initialSetupCard">
+                <h2>🚦 初回セットアップ</h2>
+                <p class="hint">
+                    初期プリセットは入れていません。自分で必要な項目だけ追加してください。
+                </p>
+
+                <div id="setupChecklist" class="setup-checklist">
+                    <div class="setup-item">
+                        <span class="setup-mark">□</span>
+                        <span>目標を設定する</span>
+                    </div>
+                    <div class="setup-item">
+                        <span class="setup-mark">□</span>
+                        <span>取り組み項目を追加する</span>
+                    </div>
+                    <div class="setup-item">
+                        <span class="setup-mark">□</span>
+                        <span>継続項目を追加する</span>
+                    </div>
+                    <div class="setup-item">
+                        <span class="setup-mark">□</span>
+                        <span>予定テンプレートを追加する</span>
+                    </div>
+                </div>
+
+                <div class="setup-action-grid">
+                    <button type="button" class="secondary-button page-jump-button" data-page-target="settingsPage">
+                        設定ページへ
+                    </button>
+                    <button type="button" class="secondary-button page-jump-button" data-page-target="schedulePage">
+                        予定ページへ
+                    </button>
+                </div>
             </section>
 
             <section class="card">
@@ -227,7 +262,7 @@
                 <h2>📌 行動・取り組み</h2>
 
                 <label for="studyTotal">取り組み時間（分）</label>
-                <input type="number" id="studyTotal" min="0" placeholder="例：180">
+                <input type="number" id="studyTotal" min="0" placeholder="例：60">
 
                 <label for="mainSubject">主に取り組んだ親項目</label>
                 <select id="mainSubject">
@@ -248,10 +283,8 @@
                     <option value="">未選択</option>
                     <option value="休み">休み</option>
                     <option value="昼勤務">昼勤務</option>
-                    <option value="21-23">21-23</option>
-                    <option value="21-6">21-6</option>
-                    <option value="21-8">21-8</option>
-                    <option value="21-9">21-9</option>
+                    <option value="夜勤務">夜勤務</option>
+                    <option value="短時間勤務">短時間勤務</option>
                     <option value="応援勤務">応援勤務</option>
                     <option value="予定あり">予定あり</option>
                     <option value="自由日">自由日</option>
@@ -265,7 +298,7 @@
             <section class="card">
                 <h2>📝 メモ</h2>
                 <label for="memo">今日のメモ</label>
-                <textarea id="memo" rows="5" placeholder="例：夜勤明けで眠気が強い。新聞は継続。企業法を少し進めた。"></textarea>
+                <textarea id="memo" rows="5" placeholder="例：睡眠、体調、予定、取り組み、気づいたことなど"></textarea>
             </section>
 
             <section class="card warning-card" id="warningCard">
@@ -289,28 +322,7 @@
 
             <section class="section-label-card">
                 <h2>予定</h2>
-                <p>勤務・学校・学習・習い事・通院・家事・タスクを管理します。</p>
-            </section>
-
-            <section class="card schedule-quick-card">
-                <h2>⚡ よく使う予定テンプレート</h2>
-
-                <p class="hint">
-                    ボタンを押すと、予定入力欄に自動セットされます。保存前に日付・場所・メモを調整できます。
-                </p>
-
-                <div class="template-button-grid">
-                    <button type="button" class="template-button" data-template-type="work-21-23">勤務 21-23</button>
-                    <button type="button" class="template-button" data-template-type="work-21-6">勤務 21-6</button>
-                    <button type="button" class="template-button" data-template-type="work-21-8">勤務 21-8</button>
-                    <button type="button" class="template-button" data-template-type="work-21-9">勤務 21-9</button>
-                    <button type="button" class="template-button" data-template-type="day-work">昼勤務</button>
-                    <button type="button" class="template-button" data-template-type="rest">休み</button>
-                    <button type="button" class="template-button" data-template-type="study-1h">学習 1時間</button>
-                    <button type="button" class="template-button" data-template-type="field">畑作業</button>
-                    <button type="button" class="template-button" data-template-type="shopping">買い物</button>
-                    <button type="button" class="template-button" data-template-type="hospital">通院</button>
-                </div>
+                <p>予定・テンプレート・タスク・月間カレンダーを管理します。</p>
             </section>
 
             <section class="card schedule-day-card">
@@ -343,6 +355,18 @@
                 </div>
             </section>
 
+            <section class="card schedule-template-card">
+                <h2>⚡ よく使う予定テンプレート</h2>
+
+                <p class="hint">
+                    テンプレートは予定作成時だけ使います。下の予定作成カードで内容を入力し、「この内容をテンプレート化」を押すと保存されます。
+                </p>
+
+                <div id="scheduleTemplateList" class="schedule-template-list">
+                    <p class="empty">テンプレートはまだありません。</p>
+                </div>
+            </section>
+
             <section class="card schedule-card">
                 <h2>📆 予定を追加・編集</h2>
 
@@ -364,7 +388,6 @@
                             <option value="試験">試験</option>
                             <option value="家事">家事</option>
                             <option value="買い物">買い物</option>
-                            <option value="畑">畑</option>
                             <option value="運動">運動</option>
                             <option value="用事">用事</option>
                             <option value="休み">休み</option>
@@ -374,7 +397,7 @@
                 </div>
 
                 <label for="scheduleTitle">予定名</label>
-                <input type="text" id="scheduleTitle" placeholder="例：吉野家 都町店、企業法テキスト、病院">
+                <input type="text" id="scheduleTitle" placeholder="例：勤務、授業、学習、通院、買い物">
 
                 <div class="two-column">
                     <div>
@@ -404,7 +427,7 @@
                     </div>
 
                     <label for="schedulePlace">場所</label>
-                    <input type="text" id="schedulePlace" placeholder="例：都町店、自宅、病院">
+                    <input type="text" id="schedulePlace" placeholder="例：自宅、職場、学校、店舗名、施設名">
 
                     <label for="scheduleLinkedSubject">関連する取り組み親項目</label>
                     <select id="scheduleLinkedSubject">
@@ -417,13 +440,17 @@
                     </select>
 
                     <label for="scheduleMemo">予定メモ</label>
-                    <textarea id="scheduleMemo" rows="3" placeholder="例：応援前に都町店へ寄る。企業法第3章。"></textarea>
+                    <textarea id="scheduleMemo" rows="3" placeholder="例：持ち物、注意点、移動、準備など"></textarea>
                 </details>
 
                 <input type="hidden" id="editingScheduleId">
 
                 <button type="button" id="saveScheduleButton" class="primary-button">
                     予定を保存
+                </button>
+
+                <button type="button" id="saveScheduleAsTemplateButton" class="secondary-button">
+                    この内容をテンプレート化
                 </button>
 
                 <button type="button" id="duplicateScheduleButton" class="secondary-button">
@@ -452,24 +479,23 @@
                             <option value="学習">学習</option>
                             <option value="家事">家事</option>
                             <option value="買い物">買い物</option>
-                            <option value="役所・手続き">役所・手続き</option>
+                            <option value="手続き">手続き</option>
                             <option value="通院">通院</option>
-                            <option value="畑">畑</option>
                             <option value="運動">運動</option>
-                            <option value="人間関係">人間関係</option>
                             <option value="仕事">仕事</option>
+                            <option value="人間関係">人間関係</option>
                             <option value="その他">その他</option>
                         </select>
                     </div>
                 </div>
 
                 <label for="taskTitle">タスク名</label>
-                <input type="text" id="taskTitle" placeholder="例：企業法テキスト5ページ、洗濯、郵便局で発送">
+                <input type="text" id="taskTitle" placeholder="例：資料を読む、掃除する、買い物する、手続きをする">
 
                 <details class="advanced-details">
                     <summary>タスクメモを開く</summary>
                     <label for="taskMemo">タスクメモ</label>
-                    <textarea id="taskMemo" rows="3" placeholder="例：第3章から。洗濯後に干す。"></textarea>
+                    <textarea id="taskMemo" rows="3" placeholder="例：分量、手順、期限、注意点など"></textarea>
                 </details>
 
                 <input type="hidden" id="editingTaskId">
@@ -493,17 +519,16 @@
                 <h2>📥 予定・タスクの一括入力</h2>
 
                 <p class="hint">
-                    v8.5では簡略入力にも対応します。例：8/24 21-8 都町、8/25 休み、8/26 企業法 13-14
+                    例：8/24 9-18 勤務、8/25 休み、8/26 学習 13-14、2026-08-29 タスク 家事 掃除する
                 </p>
 
                 <label for="bulkScheduleText">一括入力テキスト</label>
                 <textarea id="bulkScheduleText" rows="8" placeholder="例：
-8/24 21-8 都町
+8/24 9-18 勤務
 8/25 休み
-8/26 21-6 都町
-8/27 10-21 東金
-8/28 企業法 13-14
-2026-08-29 タスク 家事 洗濯する"></textarea>
+8/26 学習 13-14
+8/27 通院 10-11
+2026-08-29 タスク 家事 掃除する"></textarea>
 
                 <button type="button" id="importBulkScheduleButton" class="primary-button">
                     一括登録
@@ -513,7 +538,7 @@
             </section>
 
             <section class="card month-plan-card">
-                <h2>🗓 月間予定・タスク一覧</h2>
+                <h2>🗓 月間カレンダー</h2>
 
                 <label for="monthPlanInput">表示する月</label>
                 <input type="month" id="monthPlanInput">
@@ -534,6 +559,12 @@
                         <span id="monthTaskDoneRate" class="summary-value">未計算</span>
                     </div>
                 </div>
+
+                <div id="monthlyCalendarGrid" class="monthly-calendar-grid">
+                    <p class="empty">月間カレンダーを読み込み中です。</p>
+                </div>
+
+                <h3 class="subheading">月間リスト</h3>
 
                 <div id="monthlyPlanList" class="monthly-plan-list">
                     <p class="empty">予定・タスクを読み込み中です。</p>
@@ -977,14 +1008,25 @@
                 <p>目標・睡眠予定・取り組み項目・継続項目を管理します。</p>
             </section>
 
+            <section class="card setup-card">
+                <h2>🚦 初回セットアップ</h2>
+                <p class="hint">
+                    このアプリには、公開用として個人向けプリセットを入れていません。必要なものを自分で追加してください。
+                </p>
+
+                <div id="settingsSetupChecklist" class="setup-checklist">
+                    <p class="empty">セットアップ状況を読み込み中です。</p>
+                </div>
+            </section>
+
             <section class="card goal-card">
                 <h2>🎯 目標設定</h2>
 
                 <label for="goalTitle">現在の目標</label>
-                <input type="text" id="goalTitle" placeholder="例：公認会計士試験合格、TOEIC900、生活改善">
+                <input type="text" id="goalTitle" placeholder="例：○○合格、TOEIC900、生活改善">
 
                 <label for="goalReason">目標の理由</label>
-                <textarea id="goalReason" rows="3" placeholder="例：生活を立て直し、将来の選択肢を増やしたい"></textarea>
+                <textarea id="goalReason" rows="3" placeholder="例：生活を整えたい、仕事に活かしたい、学習を継続したい"></textarea>
 
                 <label for="goalPriorityItem">最優先で伸ばしたい項目</label>
                 <select id="goalPriorityItem">
@@ -995,7 +1037,7 @@
                 <input type="number" id="goalMinimumMinutes" min="0" placeholder="例：15">
 
                 <label for="goalStandardMinutes">1日の標準ライン（分）</label>
-                <input type="number" id="goalStandardMinutes" min="0" placeholder="例：120">
+                <input type="number" id="goalStandardMinutes" min="0" placeholder="例：60">
 
                 <button id="saveGoalButton" class="primary-button">目標設定を保存</button>
 
@@ -1019,8 +1061,12 @@
             <section class="card item-settings-card">
                 <h2>🧩 取り組み項目設定</h2>
 
+                <p class="hint">
+                    初期項目はありません。使いたい項目だけ追加してください。
+                </p>
+
                 <label for="newSubjectName">追加する親項目名</label>
-                <input type="text" id="newSubjectName" placeholder="例：財務会計論、英語、読書、筋トレ">
+                <input type="text" id="newSubjectName" placeholder="例：英語、読書、資格学習、運動、生活改善">
 
                 <button id="addSubjectButton" class="primary-button">親項目を追加</button>
 
@@ -1032,8 +1078,12 @@
             <section class="card habit-settings-card">
                 <h2>🔁 継続項目設定</h2>
 
+                <p class="hint">
+                    初期項目はありません。毎日・定期的に続けたいものだけ追加してください。
+                </p>
+
                 <label for="newHabitName">追加する継続項目名</label>
-                <input type="text" id="newHabitName" placeholder="例：新聞、掃除、禁欲、瞑想、弁当作り">
+                <input type="text" id="newHabitName" placeholder="例：読書、掃除、運動、瞑想、日記">
 
                 <label for="newHabitType">継続項目のタイプ</label>
                 <select id="newHabitType">
@@ -1147,7 +1197,7 @@
     </main>
 
     <footer class="app-footer">
-        <p>Life Growth Analyzer v8.5</p>
+        <p>Life Growth Analyzer v9.0</p>
     </footer>
 
     <script src="script.js"></script>

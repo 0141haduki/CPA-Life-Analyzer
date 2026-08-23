@@ -1,6 +1,6 @@
-// Life Growth Analyzer v8.5
+// Life Growth Analyzer v9.0
 
-console.log("Life Growth Analyzer v8.5 起動");
+console.log("Life Growth Analyzer v9.0 起動");
 
 const STORAGE_KEY = "CPA_LIFE_ANALYZER_RECORDS_V2";
 const LAST_DATE_KEY = "CPA_LIFE_ANALYZER_LAST_DATE_V2";
@@ -15,26 +15,11 @@ const HABIT_RECORDS_KEY = "LIFE_GROWTH_ANALYZER_HABIT_RECORDS_V1";
 
 const SCHEDULE_KEY = "LIFE_GROWTH_ANALYZER_SCHEDULE_V1";
 const TASKS_KEY = "LIFE_GROWTH_ANALYZER_TASKS_V1";
+const SCHEDULE_TEMPLATES_KEY = "LIFE_GROWTH_ANALYZER_SCHEDULE_TEMPLATES_V1";
 
-const defaultSubjectConfigs = [
-    { name: "財務会計論", subSubjects: ["テキスト", "問題集", "短答問題集", "理論", "計算"] },
-    { name: "管理会計論", subSubjects: ["テキスト", "問題集", "短答問題集"] },
-    { name: "監査論", subSubjects: ["テキスト", "短答問題集", "論文対策"] },
-    { name: "企業法", subSubjects: ["テキスト", "短答問題集", "論文対策"] },
-    { name: "租税法", subSubjects: ["テキスト", "問題集"] },
-    { name: "経営学", subSubjects: ["テキスト", "問題集"] },
-    { name: "英語", subSubjects: ["単語", "リスニング", "BBC", "TOEIC"] },
-    { name: "読書", subSubjects: [] },
-    { name: "プログラミング", subSubjects: [] },
-    { name: "生活改善", subSubjects: [] },
-    { name: "その他", subSubjects: [] }
-];
-
-const defaultHabits = [
-    { id: "habit_newspaper", name: "新聞", type: "action", createdAt: new Date().toISOString() },
-    { id: "habit_cleaning", name: "掃除", type: "action", createdAt: new Date().toISOString() },
-    { id: "habit_abstinence", name: "禁欲", type: "avoid", createdAt: new Date().toISOString() }
-];
+const defaultSubjectConfigs = [];
+const defaultHabits = [];
+const defaultScheduleTemplates = [];
 
 const fieldIds = [
     "plannedBedtime",
@@ -100,24 +85,34 @@ function createId(prefix) {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function escapeHtml(text) {
+    return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 function getTodayString() {
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 }
 
 function getCurrentTimeString() {
     const now = new Date();
+
     return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
 function dateStringToDate(dateText) {
     const parts = String(dateText || "").split("-").map(Number);
+
     if (parts.length !== 3) return null;
 
     const [year, month, day] = parts;
+
     if (!year || !month || !day) return null;
 
     return new Date(year, month - 1, day);
@@ -129,9 +124,11 @@ function dateToString(date) {
 
 function addDays(dateText, days) {
     const date = dateStringToDate(dateText);
+
     if (!date) return dateText;
 
     date.setDate(date.getDate() + days);
+
     return dateToString(date);
 }
 
@@ -157,6 +154,7 @@ function getDaysDiff(dateText) {
 
 function formatShortDate(dateText) {
     const parts = String(dateText || "").split("-");
+
     if (parts.length !== 3) return dateText;
 
     return `${Number(parts[1])}/${Number(parts[2])}`;
@@ -180,30 +178,17 @@ function getDatesInMonth(monthText) {
     return dates;
 }
 
-function normalizeTime(text) {
-    const raw = String(text || "").trim();
-
-    if (/^\d{1,2}$/.test(raw)) {
-        return `${String(Number(raw)).padStart(2, "0")}:00`;
-    }
-
-    if (/^\d{1,2}:\d{2}$/.test(raw)) {
-        const [hour, minute] = raw.split(":");
-        return `${String(Number(hour)).padStart(2, "0")}:${minute}`;
-    }
-
-    return "";
-}
-
 function getNumberOrNull(valueText) {
     if (valueText === "" || valueText === undefined || valueText === null) return null;
 
     const value = Number(valueText);
+
     return Number.isNaN(value) ? null : value;
 }
 
 function averageNumber(values) {
     const filtered = values.filter(value => value !== null && value !== undefined && !Number.isNaN(value));
+
     if (filtered.length === 0) return null;
 
     return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
@@ -223,13 +208,19 @@ function valueOrDash(value) {
     return value === undefined || value === null || value === "" ? "未入力" : value;
 }
 
-function escapeHtml(text) {
-    return String(text ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+function normalizeTime(text) {
+    const raw = String(text || "").trim();
+
+    if (/^\d{1,2}$/.test(raw)) {
+        return `${String(Number(raw)).padStart(2, "0")}:00`;
+    }
+
+    if (/^\d{1,2}:\d{2}$/.test(raw)) {
+        const [hour, minute] = raw.split(":");
+        return `${String(Number(hour)).padStart(2, "0")}:${minute}`;
+    }
+
+    return "";
 }
 
 // ==============================
@@ -238,6 +229,7 @@ function escapeHtml(text) {
 
 function showPage(pageId) {
     const target = $(pageId);
+
     if (!target) return;
 
     currentPageId = pageId;
@@ -267,12 +259,14 @@ function setupPageTabs() {
 }
 
 // ==============================
-// ストレージ
+// 基本ストレージ
 // ==============================
 
 function getRecords() {
     const records = safeJsonParse(localStorage.getItem(STORAGE_KEY), {});
+
     if (!records || typeof records !== "object" || Array.isArray(records)) return {};
+
     return records;
 }
 
@@ -317,6 +311,7 @@ function timeToMinutes(timeText) {
     if (!timeText) return null;
 
     const parts = String(timeText).split(":");
+
     if (parts.length !== 2) return null;
 
     const hours = Number(parts[0]);
@@ -334,6 +329,7 @@ function calculateTimeInBedHours(startTime, endTime) {
     if (start === null || end === null) return null;
 
     let diff = end - start;
+
     if (diff <= 0) diff += 24 * 60;
 
     return diff / 60;
@@ -341,6 +337,7 @@ function calculateTimeInBedHours(startTime, endTime) {
 
 function calculateMinutesBetween(startTime, endTime) {
     const hours = calculateTimeInBedHours(startTime, endTime);
+
     if (hours === null) return null;
 
     return Math.round(hours * 60);
@@ -379,6 +376,7 @@ function formatGapMinutes(minutes) {
     if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return "未計算";
 
     const rounded = Math.round(minutes);
+
     if (rounded === 0) return "±0分";
 
     const sign = rounded > 0 ? "+" : "-";
@@ -451,7 +449,7 @@ function setSummaryClass(element, value, type) {
 }
 
 function isNightShiftWorkType(workType) {
-    return workType === "21-6" || workType === "21-8" || workType === "21-9";
+    return workType === "夜勤務";
 }
 
 function isNightTimeSchedule(schedule) {
@@ -461,6 +459,7 @@ function isNightTimeSchedule(schedule) {
     if (start === null || end === null) return false;
 
     if (end <= start) return true;
+
     return start >= 21 * 60 || start < 5 * 60 || end > 22 * 60 || end <= 8 * 60;
 }
 
@@ -473,12 +472,11 @@ function inferWorkTypeFromSchedule(schedule) {
     if (!start && !end) return "応援勤務";
     if (!start || !end) return "応援勤務";
 
-    if (start === "21:00" && end === "23:00") return "21-23";
-    if (start === "21:00" && end === "06:00") return "21-6";
-    if (start === "21:00" && end === "08:00") return "21-8";
-    if (start === "21:00" && end === "09:00") return "21-9";
+    if (isNightTimeSchedule(schedule)) return "夜勤務";
 
-    if (isNightTimeSchedule(schedule)) return "応援勤務";
+    const hours = calculateTimeInBedHours(start, end);
+
+    if (hours !== null && hours <= 4) return "短時間勤務";
 
     return "昼勤務";
 }
@@ -488,7 +486,9 @@ function inferWorkTypeFromSchedule(schedule) {
 // ==============================
 
 function normalizeSubjectConfigs(raw) {
-    if (!Array.isArray(raw) || raw.length === 0) return cloneData(defaultSubjectConfigs);
+    if (!Array.isArray(raw)) return cloneData(defaultSubjectConfigs);
+
+    if (raw.length === 0) return [];
 
     if (typeof raw[0] === "string") {
         return raw
@@ -502,6 +502,7 @@ function normalizeSubjectConfigs(raw) {
             if (!item) return null;
 
             const name = String(item.name || "").trim();
+
             if (!name) return null;
 
             const subSubjects = Array.isArray(item.subSubjects)
@@ -519,9 +520,7 @@ function normalizeSubjectConfigs(raw) {
 function getSubjectConfigs() {
     const current = localStorage.getItem(SUBJECTS_KEY);
 
-    if (current) {
-        return normalizeSubjectConfigs(safeJsonParse(current, []));
-    }
+    if (current) return normalizeSubjectConfigs(safeJsonParse(current, []));
 
     const old = localStorage.getItem(OLD_SUBJECTS_KEY);
 
@@ -531,7 +530,8 @@ function getSubjectConfigs() {
         return migrated;
     }
 
-    return cloneData(defaultSubjectConfigs);
+    setSubjectConfigs([]);
+    return [];
 }
 
 function setSubjectConfigs(configs) {
@@ -544,11 +544,13 @@ function getSubjectNames() {
 
 function getSubSubjectsFor(parentName) {
     const found = getSubjectConfigs().find(item => item.name === parentName);
+
     return found ? found.subSubjects : [];
 }
 
 function updateSubjectSelectOptions(selectedValue) {
     const select = $("mainSubject");
+
     if (!select) return;
 
     const subjects = getSubjectNames();
@@ -575,6 +577,7 @@ function updateSubjectSelectOptions(selectedValue) {
     }
 
     select.value = selectedValue || "";
+
     updateSubSubjectSelectOptions($("subSubject")?.value || "");
 }
 
@@ -612,6 +615,7 @@ function updateSubSubjectSelectOptions(selectedValue) {
 
 function updateGoalPriorityOptions(selectedValue) {
     const select = $("goalPriorityItem");
+
     if (!select) return;
 
     const subjects = getSubjectNames();
@@ -642,6 +646,7 @@ function updateGoalPriorityOptions(selectedValue) {
 
 function updateScheduleLinkedSubjectOptions(selectedValue) {
     const select = $("scheduleLinkedSubject");
+
     if (!select) return;
 
     const subjects = getSubjectNames();
@@ -668,6 +673,7 @@ function updateScheduleLinkedSubjectOptions(selectedValue) {
     }
 
     select.value = selectedValue || "";
+
     updateScheduleLinkedSubSubjectOptions($("scheduleLinkedSubSubject")?.value || "");
 }
 
@@ -704,39 +710,7 @@ function updateScheduleLinkedSubSubjectOptions(selectedValue) {
 }
 
 function loadSubjectsToUI() {
-    const records = getRecords();
-    const schedules = getSchedules();
     const configs = getSubjectConfigs();
-
-    Object.values(records).forEach(record => {
-        if (!record) return;
-
-        if (record.mainSubject && !configs.some(item => item.name === record.mainSubject)) {
-            configs.push({ name: record.mainSubject, subSubjects: [] });
-        }
-
-        if (record.mainSubject && record.subSubject) {
-            const target = configs.find(item => item.name === record.mainSubject);
-            if (target && !target.subSubjects.includes(record.subSubject)) {
-                target.subSubjects.push(record.subSubject);
-            }
-        }
-    });
-
-    Object.values(schedules).flat().forEach(schedule => {
-        if (!schedule) return;
-
-        if (schedule.linkedSubject && !configs.some(item => item.name === schedule.linkedSubject)) {
-            configs.push({ name: schedule.linkedSubject, subSubjects: [] });
-        }
-
-        if (schedule.linkedSubject && schedule.linkedSubSubject) {
-            const target = configs.find(item => item.name === schedule.linkedSubject);
-            if (target && !target.subSubjects.includes(schedule.linkedSubSubject)) {
-                target.subSubjects.push(schedule.linkedSubSubject);
-            }
-        }
-    });
 
     setSubjectConfigs(configs);
 
@@ -750,6 +724,7 @@ function loadSubjectsToUI() {
 
 function addSubject() {
     const input = $("newSubjectName");
+
     if (!input) return;
 
     const name = input.value.trim();
@@ -767,6 +742,7 @@ function addSubject() {
     }
 
     configs.push({ name, subSubjects: [] });
+
     setSubjectConfigs(configs);
 
     input.value = "";
@@ -778,11 +754,6 @@ function addSubject() {
 
 function deleteSubject(subjectName) {
     const configs = getSubjectConfigs();
-
-    if (configs.length <= 1) {
-        alert("親項目は最低1つ必要です。");
-        return;
-    }
 
     if (!confirm(`「${subjectName}」を親項目リストから削除しますか？\n過去の記録データは削除されません。`)) return;
 
@@ -813,6 +784,7 @@ function addSubSubject(parentName, input) {
     }
 
     parent.subSubjects.push(subName);
+
     setSubjectConfigs(configs);
 
     input.value = "";
@@ -830,6 +802,7 @@ function deleteSubSubject(parentName, subName) {
     if (!parent) return;
 
     parent.subSubjects = parent.subSubjects.filter(item => item !== subName);
+
     setSubjectConfigs(configs);
 
     loadSubjectsToUI();
@@ -838,11 +811,20 @@ function deleteSubSubject(parentName, subName) {
 
 function renderSubjectSettingsList() {
     const list = $("subjectSettingsList");
+
     if (!list) return;
 
     const configs = getSubjectConfigs();
 
     list.innerHTML = "";
+
+    if (configs.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "取り組み項目はまだありません。必要な親項目を追加してください。";
+        list.appendChild(empty);
+        return;
+    }
 
     configs.forEach(config => {
         const item = document.createElement("div");
@@ -901,7 +883,7 @@ function renderSubjectSettingsList() {
 
         const input = document.createElement("input");
         input.type = "text";
-        input.placeholder = "例：テキスト、問題集、新聞記事名";
+        input.placeholder = "例：テキスト、問題集、動画、復習";
 
         const addButton = document.createElement("button");
         addButton.type = "button";
@@ -934,13 +916,14 @@ function renderSubjectSettingsList() {
 // ==============================
 
 function normalizeHabits(raw) {
-    if (!Array.isArray(raw)) return cloneData(defaultHabits);
+    if (!Array.isArray(raw)) return [];
 
-    const cleaned = raw
+    return raw
         .map(item => {
             if (!item) return null;
 
             const name = String(item.name || "").trim();
+
             if (!name) return null;
 
             return {
@@ -951,12 +934,17 @@ function normalizeHabits(raw) {
             };
         })
         .filter(Boolean);
-
-    return cleaned.length > 0 ? cleaned : cloneData(defaultHabits);
 }
 
 function getHabits() {
-    return normalizeHabits(safeJsonParse(localStorage.getItem(HABITS_KEY), defaultHabits));
+    const stored = localStorage.getItem(HABITS_KEY);
+
+    if (!stored) {
+        setHabits([]);
+        return [];
+    }
+
+    return normalizeHabits(safeJsonParse(stored, []));
 }
 
 function setHabits(habits) {
@@ -965,7 +953,9 @@ function setHabits(habits) {
 
 function getHabitRecords() {
     const records = safeJsonParse(localStorage.getItem(HABIT_RECORDS_KEY), {});
+
     if (!records || typeof records !== "object" || Array.isArray(records)) return {};
+
     return records;
 }
 
@@ -1097,6 +1087,7 @@ function shouldShowHabitByFilter(date, habit) {
 
 function renderTodayHabitList() {
     const list = $("todayHabitList");
+
     if (!list) return;
 
     const date = $("recordDate")?.value || getTodayString();
@@ -1105,6 +1096,14 @@ function renderTodayHabitList() {
     updateHabitTodaySummary(date);
 
     list.innerHTML = "";
+
+    if (habits.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "継続項目はまだありません。設定ページで追加してください。";
+        list.appendChild(empty);
+        return;
+    }
 
     const visibleHabits = habits.filter(habit => shouldShowHabitByFilter(date, habit));
 
@@ -1219,11 +1218,20 @@ function deleteHabit(habitId) {
 
 function renderHabitSettingsList() {
     const list = $("habitSettingsList");
+
     if (!list) return;
 
     const habits = getHabits();
 
     list.innerHTML = "";
+
+    if (habits.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "継続項目はまだありません。必要な項目を追加してください。";
+        list.appendChild(empty);
+        return;
+    }
 
     habits.forEach(habit => {
         const item = document.createElement("div");
@@ -1246,6 +1254,275 @@ function renderHabitSettingsList() {
 
     list.querySelectorAll("[data-habit-delete]").forEach(button => {
         button.addEventListener("click", () => deleteHabit(button.dataset.habitDelete));
+    });
+}
+
+// ==============================
+// 予定テンプレート v9.0
+// ==============================
+
+function normalizeScheduleTemplates(raw) {
+    if (!Array.isArray(raw)) return [];
+
+    return raw
+        .map(item => {
+            if (!item) return null;
+
+            const title = String(item.title || "").trim();
+            const category = String(item.category || "その他").trim();
+
+            if (!title && category !== "休み") return null;
+
+            return {
+                id: item.id || createId("schedule_template"),
+                name: item.name || makeScheduleTemplateName(item),
+                category,
+                title: title || category,
+                plannedStart: item.plannedStart || "",
+                plannedEnd: item.plannedEnd || "",
+                place: item.place || "",
+                linkedSubject: item.linkedSubject || "",
+                linkedSubSubject: item.linkedSubSubject || "",
+                memo: item.memo || "",
+                createdAt: item.createdAt || new Date().toISOString(),
+                updatedAt: item.updatedAt || new Date().toISOString()
+            };
+        })
+        .filter(Boolean);
+}
+
+function getScheduleTemplates() {
+    const stored = localStorage.getItem(SCHEDULE_TEMPLATES_KEY);
+
+    if (!stored) {
+        setScheduleTemplates([]);
+        return [];
+    }
+
+    return normalizeScheduleTemplates(safeJsonParse(stored, []));
+}
+
+function setScheduleTemplates(templates) {
+    localStorage.setItem(SCHEDULE_TEMPLATES_KEY, JSON.stringify(normalizeScheduleTemplates(templates)));
+}
+
+function makeScheduleTemplateName(data) {
+    const category = data.category || "その他";
+    const title = data.title || category;
+    const start = data.plannedStart || "";
+    const end = data.plannedEnd || "";
+    const time = start && end ? ` ${start}-${end}` : "";
+    const place = data.place ? ` ${data.place}` : "";
+
+    return `${category}：${title}${time}${place}`.trim();
+}
+
+function getScheduleTemplateFromForm() {
+    const schedule = getScheduleFormData();
+
+    return {
+        id: "",
+        name: makeScheduleTemplateName(schedule),
+        category: schedule.category || "その他",
+        title: schedule.title || schedule.category || "予定",
+        plannedStart: schedule.plannedStart || "",
+        plannedEnd: schedule.plannedEnd || "",
+        place: schedule.place || "",
+        linkedSubject: schedule.linkedSubject || "",
+        linkedSubSubject: schedule.linkedSubSubject || "",
+        memo: schedule.memo || "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+}
+
+function saveScheduleAsTemplate() {
+    const template = getScheduleTemplateFromForm();
+
+    if (!template.title && template.category !== "休み") {
+        alert("テンプレート化する予定名を入力してください。");
+        return;
+    }
+
+    if (!template.category) {
+        alert("テンプレート化するカテゴリを選択してください。");
+        return;
+    }
+
+    const templates = getScheduleTemplates();
+
+    const same = templates.find(item => {
+        return item.category === template.category
+            && item.title === template.title
+            && item.plannedStart === template.plannedStart
+            && item.plannedEnd === template.plannedEnd
+            && item.place === template.place
+            && item.linkedSubject === template.linkedSubject
+            && item.linkedSubSubject === template.linkedSubSubject
+            && item.memo === template.memo;
+    });
+
+    if (same && !confirm("同じ内容のテンプレートがすでにあります。それでも追加しますか？")) {
+        return;
+    }
+
+    const customName = prompt("テンプレート名を入力してください。", template.name);
+
+    if (customName === null) return;
+
+    template.name = customName.trim() || template.name;
+    template.id = createId("schedule_template");
+
+    templates.push(template);
+    setScheduleTemplates(templates);
+
+    renderScheduleTemplateList();
+    updateSetupChecklist();
+    setText("scheduleStatus", `テンプレート化しました：${template.name}`);
+}
+
+function applyScheduleTemplate(templateId) {
+    const template = getScheduleTemplates().find(item => item.id === templateId);
+
+    if (!template) return;
+
+    const date = scheduleFocusDate || $("scheduleFocusDate")?.value || $("recordDate")?.value || getTodayString();
+
+    setScheduleFormData({
+        id: "",
+        date,
+        category: template.category || "その他",
+        title: template.title || "",
+        plannedStart: template.plannedStart || "",
+        plannedEnd: template.plannedEnd || "",
+        actualStart: "",
+        actualEnd: "",
+        place: template.place || "",
+        linkedSubject: template.linkedSubject || "",
+        linkedSubSubject: template.linkedSubSubject || "",
+        memo: template.memo || ""
+    });
+
+    setText("scheduleStatus", `テンプレートを反映しました：${template.name}`);
+    showPage("schedulePage");
+}
+
+function addScheduleTemplateDirectly(templateId) {
+    const template = getScheduleTemplates().find(item => item.id === templateId);
+
+    if (!template) return;
+
+    const date = scheduleFocusDate || $("scheduleFocusDate")?.value || $("recordDate")?.value || getTodayString();
+
+    const schedule = {
+        id: "",
+        date,
+        category: template.category || "その他",
+        title: template.title || "",
+        plannedStart: template.plannedStart || "",
+        plannedEnd: template.plannedEnd || "",
+        actualStart: "",
+        actualEnd: "",
+        place: template.place || "",
+        linkedSubject: template.linkedSubject || "",
+        linkedSubSubject: template.linkedSubSubject || "",
+        memo: template.memo || "",
+        updatedAt: new Date().toISOString()
+    };
+
+    saveScheduleItem(schedule);
+
+    setText("scheduleStatus", `テンプレートから予定を追加しました：${date} ${template.name}`);
+    updateAllDisplays();
+}
+
+function editScheduleTemplate(templateId) {
+    const template = getScheduleTemplates().find(item => item.id === templateId);
+
+    if (!template) return;
+
+    applyScheduleTemplate(templateId);
+    setText("scheduleStatus", `テンプレートを編集用に反映しました。修正後、「この内容をテンプレート化」で新規保存してください：${template.name}`);
+}
+
+function deleteScheduleTemplate(templateId) {
+    const templates = getScheduleTemplates();
+    const target = templates.find(item => item.id === templateId);
+
+    if (!target) return;
+
+    if (!confirm(`テンプレート「${target.name}」を削除しますか？`)) return;
+
+    setScheduleTemplates(templates.filter(item => item.id !== templateId));
+
+    renderScheduleTemplateList();
+    updateSetupChecklist();
+    setText("scheduleStatus", `テンプレートを削除しました：${target.name}`);
+}
+
+function renderScheduleTemplateList() {
+    const list = $("scheduleTemplateList");
+
+    if (!list) return;
+
+    const templates = getScheduleTemplates();
+
+    list.innerHTML = "";
+
+    if (templates.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "テンプレートはまだありません。予定作成カードで内容を入力し、「この内容をテンプレート化」を押してください。";
+        list.appendChild(empty);
+        return;
+    }
+
+    templates.forEach(template => {
+        const item = document.createElement("div");
+        item.className = "schedule-template-item";
+
+        const timeText = template.plannedStart && template.plannedEnd
+            ? `${template.plannedStart}-${formatTimeWithNextDay(template.plannedStart, template.plannedEnd)}`
+            : "時刻なし";
+
+        const placeText = template.place ? ` / ${template.place}` : "";
+        const linkedText = template.linkedSubject
+            ? ` / ${template.linkedSubject}${template.linkedSubSubject ? "・" + template.linkedSubSubject : ""}`
+            : "";
+
+        item.innerHTML = `
+            <div class="schedule-template-header">
+                <div>
+                    <span class="schedule-template-title">${escapeHtml(template.name)}</span>
+                    <span class="schedule-template-meta">${escapeHtml(template.category)}：${escapeHtml(template.title)} / ${escapeHtml(timeText)}${escapeHtml(placeText)}${escapeHtml(linkedText)}</span>
+                </div>
+            </div>
+            ${template.memo ? `<p class="schedule-template-memo">${escapeHtml(template.memo)}</p>` : ""}
+            <div class="schedule-template-actions">
+                <button type="button" class="template-direct-add-button" data-template-direct-add="${template.id}">この日に追加</button>
+                <button type="button" class="template-use-button" data-template-use="${template.id}">入力欄へ</button>
+                <button type="button" class="template-edit-button" data-template-edit="${template.id}">編集用</button>
+                <button type="button" class="template-delete-button" data-template-delete="${template.id}">削除</button>
+            </div>
+        `;
+
+        list.appendChild(item);
+    });
+
+    list.querySelectorAll("[data-template-direct-add]").forEach(button => {
+        button.addEventListener("click", () => addScheduleTemplateDirectly(button.dataset.templateDirectAdd));
+    });
+
+    list.querySelectorAll("[data-template-use]").forEach(button => {
+        button.addEventListener("click", () => applyScheduleTemplate(button.dataset.templateUse));
+    });
+
+    list.querySelectorAll("[data-template-edit]").forEach(button => {
+        button.addEventListener("click", () => editScheduleTemplate(button.dataset.templateEdit));
+    });
+
+    list.querySelectorAll("[data-template-delete]").forEach(button => {
+        button.addEventListener("click", () => deleteScheduleTemplate(button.dataset.templateDelete));
     });
 }
 
@@ -1273,6 +1550,7 @@ function getSchedulesForDate(date) {
 
 function saveScheduleItem(schedule) {
     const date = schedule.date;
+
     if (!date) return;
 
     const schedules = getSchedules();
@@ -1401,6 +1679,7 @@ function saveScheduleFromForm() {
 
 function editSchedule(date, id) {
     const target = getSchedulesForDate(date).find(item => item.id === id);
+
     if (!target) return;
 
     scheduleFocusDate = date;
@@ -1458,6 +1737,7 @@ function scheduleLineText(schedule) {
 
 function renderScheduleList(containerId, date) {
     const list = $(containerId);
+
     if (!list) return;
 
     const schedules = getSchedulesForDate(date);
@@ -1496,9 +1776,11 @@ function renderScheduleList(containerId, date) {
     list.querySelectorAll("[data-schedule-copy]").forEach(button => {
         button.addEventListener("click", () => {
             const source = getSchedulesForDate(button.dataset.scheduleDate).find(item => item.id === button.dataset.scheduleCopy);
+
             if (!source) return;
 
             const copy = { ...source, id: "", date: scheduleFocusDate || button.dataset.scheduleDate };
+
             setScheduleFormData(copy);
             setText("scheduleStatus", "複製用に入力欄へ反映しました。日付を確認して保存してください。");
             showPage("schedulePage");
@@ -1516,11 +1798,13 @@ function renderScheduleList(containerId, date) {
 
 function renderTodayScheduleList() {
     const date = $("recordDate")?.value || getTodayString();
+
     renderScheduleList("todayScheduleList", date);
 }
 
 function renderFocusedScheduleList() {
     const date = scheduleFocusDate || $("scheduleFocusDate")?.value || $("recordDate")?.value || getTodayString();
+
     renderScheduleList("focusedScheduleList", date);
 }
 
@@ -1555,12 +1839,11 @@ function applyScheduleToRecord() {
 
         studySchedules.forEach(item => {
             const minutes = calculateMinutesBetween(item.actualStart || item.plannedStart, item.actualEnd || item.plannedEnd);
+
             if (minutes !== null) totalMinutes += minutes;
         });
 
-        if (totalMinutes > 0) {
-            record.studyTotal = String(totalMinutes);
-        }
+        if (totalMinutes > 0) record.studyTotal = String(totalMinutes);
 
         record.mainSubject = first.linkedSubject || record.mainSubject || "";
         record.subSubject = first.linkedSubSubject || record.subSubject || "";
@@ -1572,45 +1855,6 @@ function applyScheduleToRecord() {
     setFormData(record);
     updateSaveStatus(`今日の予定を日次記録へ反映しました：${date}`, false);
     updateAllDisplays();
-}
-
-function applyScheduleTemplate(type) {
-    const date = scheduleFocusDate || $("scheduleFocusDate")?.value || $("recordDate")?.value || getTodayString();
-
-    const templates = {
-        "work-21-23": { category: "勤務", title: "吉野家", plannedStart: "21:00", plannedEnd: "23:00", place: "都町店" },
-        "work-21-6": { category: "勤務", title: "吉野家", plannedStart: "21:00", plannedEnd: "06:00", place: "都町店" },
-        "work-21-8": { category: "勤務", title: "吉野家", plannedStart: "21:00", plannedEnd: "08:00", place: "都町店" },
-        "work-21-9": { category: "勤務", title: "吉野家", plannedStart: "21:00", plannedEnd: "09:00", place: "都町店" },
-        "day-work": { category: "勤務", title: "吉野家", plannedStart: "10:00", plannedEnd: "21:00", place: "都町店" },
-        "rest": { category: "休み", title: "休み", plannedStart: "", plannedEnd: "", place: "" },
-        "study-1h": { category: "学習", title: "学習", plannedStart: "13:00", plannedEnd: "14:00", place: "自宅" },
-        "field": { category: "畑", title: "畑作業", plannedStart: "06:00", plannedEnd: "07:00", place: "畑" },
-        "shopping": { category: "買い物", title: "買い物", plannedStart: "", plannedEnd: "", place: "" },
-        "hospital": { category: "通院", title: "通院", plannedStart: "", plannedEnd: "", place: "" }
-    };
-
-    const template = templates[type];
-
-    if (!template) return;
-
-    setScheduleFormData({
-        id: "",
-        date,
-        category: template.category,
-        title: template.title,
-        plannedStart: template.plannedStart,
-        plannedEnd: template.plannedEnd,
-        actualStart: "",
-        actualEnd: "",
-        place: template.place,
-        linkedSubject: template.category === "学習" ? getGoal().priorityItem || "" : "",
-        linkedSubSubject: "",
-        memo: ""
-    });
-
-    setText("scheduleStatus", `テンプレートを入力欄へ反映しました：${template.category} ${template.title}`);
-    showPage("schedulePage");
 }
 
 // ==============================
@@ -1637,6 +1881,7 @@ function getTasksForDate(date) {
 
 function saveTaskItem(task) {
     const date = task.date;
+
     if (!date) return;
 
     const tasks = getTasks();
@@ -1667,7 +1912,6 @@ function saveTaskItem(task) {
         task.done = task.done === true || oldDone;
 
         if (!Array.isArray(tasks[date])) tasks[date] = [];
-
         tasks[date].push(task);
     }
 
@@ -1764,6 +2008,7 @@ function saveTaskFromForm() {
 
 function editTask(date, id) {
     const target = getTasksForDate(date).find(item => item.id === id);
+
     if (!target) return;
 
     scheduleFocusDate = date;
@@ -1795,6 +2040,7 @@ function duplicateTaskFromForm() {
 
 function renderTaskList(containerId, date) {
     const list = $(containerId);
+
     if (!list) return;
 
     const tasks = getTasksForDate(date);
@@ -1842,9 +2088,11 @@ function renderTaskList(containerId, date) {
     list.querySelectorAll("[data-task-copy]").forEach(button => {
         button.addEventListener("click", () => {
             const source = getTasksForDate(button.dataset.taskDate).find(item => item.id === button.dataset.taskCopy);
+
             if (!source) return;
 
             const copy = { ...source, id: "", done: false, date: scheduleFocusDate || button.dataset.taskDate };
+
             setTaskFormData(copy);
             setText("taskStatus", "複製用に入力欄へ反映しました。日付を確認して保存してください。");
             showPage("schedulePage");
@@ -1862,11 +2110,13 @@ function renderTaskList(containerId, date) {
 
 function renderTodayTaskList() {
     const date = $("recordDate")?.value || getTodayString();
+
     renderTaskList("todayTaskList", date);
 }
 
 function renderFocusedTaskList() {
     const date = scheduleFocusDate || $("scheduleFocusDate")?.value || $("recordDate")?.value || getTodayString();
+
     renderTaskList("focusedTaskList", date);
 }
 
@@ -1882,6 +2132,7 @@ function resolveBulkDate(text) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
 
     const md = raw.match(/^(\d{1,2})\/(\d{1,2})$/);
+
     if (md) {
         return `${currentYear}-${String(Number(md[1])).padStart(2, "0")}-${String(Number(md[2])).padStart(2, "0")}`;
     }
@@ -1893,6 +2144,7 @@ function parseTimeRange(text) {
     const raw = String(text || "").trim();
 
     const matchColon = raw.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+
     if (matchColon) {
         return {
             start: normalizeTime(matchColon[1]),
@@ -1901,18 +2153,11 @@ function parseTimeRange(text) {
     }
 
     const matchHour = raw.match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
+
     if (matchHour) {
         return {
             start: normalizeTime(matchHour[1]),
             end: normalizeTime(matchHour[2])
-        };
-    }
-
-    const matchShift = raw.match(/^(\d{1,2})-(\d{1,2})$/);
-    if (matchShift) {
-        return {
-            start: normalizeTime(matchShift[1]),
-            end: normalizeTime(matchShift[2])
         };
     }
 
@@ -1969,24 +2214,23 @@ function inferBulkScheduleFromLine(line) {
         };
     }
 
-    const timeRange = parseTimeRange(second);
+    const range = parseTimeRange(second);
 
-    if (timeRange.start && timeRange.end) {
-        const isWorkLike = /^\d{1,2}(:\d{2})?-\d{1,2}(:\d{2})?$/.test(second);
-        const category = isWorkLike ? "勤務" : "その他";
+    if (range.start && range.end) {
+        const title = rest || "予定";
 
         return {
             type: "schedule",
             schedule: {
                 id: "",
                 date,
-                category,
-                title: category === "勤務" ? `吉野家 ${rest || ""}`.trim() : rest || "予定",
-                plannedStart: timeRange.start,
-                plannedEnd: timeRange.end,
+                category: title.includes("勤務") ? "勤務" : "その他",
+                title,
+                plannedStart: range.start,
+                plannedEnd: range.end,
                 actualStart: "",
                 actualEnd: "",
-                place: rest || "",
+                place: "",
                 linkedSubject: "",
                 linkedSubSubject: "",
                 memo: line,
@@ -1996,9 +2240,9 @@ function inferBulkScheduleFromLine(line) {
     }
 
     const maybeTime = parts[2] || "";
-    const range = parseTimeRange(maybeTime);
+    const range2 = parseTimeRange(maybeTime);
 
-    if (range.start && range.end) {
+    if (range2.start && range2.end) {
         const subjectNames = getSubjectNames();
         const foundSubject = subjectNames.find(subject => second.includes(subject) || line.includes(subject));
         const foundSub = foundSubject ? getSubSubjectsFor(foundSubject).find(sub => line.includes(sub)) : "";
@@ -2010,39 +2254,13 @@ function inferBulkScheduleFromLine(line) {
                 date,
                 category: foundSubject ? "学習" : second || "その他",
                 title: second || "予定",
-                plannedStart: range.start,
-                plannedEnd: range.end,
-                actualStart: "",
-                actualEnd: "",
-                place: "",
-                linkedSubject: foundSubject || "",
-                linkedSubSubject: foundSub || "",
-                memo: line,
-                updatedAt: new Date().toISOString()
-            }
-        };
-    }
-
-    const knownCategories = ["勤務", "学校", "講義", "学習", "習い事", "通院", "試験", "家事", "買い物", "畑", "運動", "用事", "その他"];
-
-    if (knownCategories.includes(second)) {
-        const range2 = parseTimeRange(parts[2] || "");
-        const title = parts.slice(range2.start ? 3 : 2).join(" ").trim();
-
-        return {
-            type: "schedule",
-            schedule: {
-                id: "",
-                date,
-                category: second,
-                title: title || second,
                 plannedStart: range2.start,
                 plannedEnd: range2.end,
                 actualStart: "",
                 actualEnd: "",
                 place: "",
-                linkedSubject: "",
-                linkedSubSubject: "",
+                linkedSubject: foundSubject || "",
+                linkedSubSubject: foundSub || "",
                 memo: line,
                 updatedAt: new Date().toISOString()
             }
@@ -2065,6 +2283,7 @@ function inferBulkScheduleFromLine(line) {
 
 function importBulkScheduleText() {
     const textarea = $("bulkScheduleText");
+
     if (!textarea) return;
 
     const lines = textarea.value
@@ -2099,13 +2318,14 @@ function importBulkScheduleText() {
     });
 
     textarea.value = "";
+
     setText("bulkImportStatus", `一括登録完了：予定${scheduleCount}件、タスク${taskCount}件、失敗${errorCount}件`);
 
     updateAllDisplays();
 }
 
 // ==============================
-// 月間予定
+// 月間予定・カレンダー
 // ==============================
 
 function updateMonthPlanInputIfEmpty() {
@@ -2114,8 +2334,86 @@ function updateMonthPlanInputIfEmpty() {
     }
 }
 
+function renderMonthlyCalendarGrid() {
+    const grid = $("monthlyCalendarGrid");
+
+    if (!grid) return;
+
+    updateMonthPlanInputIfEmpty();
+
+    const month = $("monthPlanInput")?.value || getMonthString(getTodayString());
+
+    if (!/^\d{4}-\d{2}$/.test(month)) return;
+
+    const [year, monthNumber] = month.split("-").map(Number);
+    const firstDate = new Date(year, monthNumber - 1, 1);
+    const firstWeekday = firstDate.getDay();
+    const lastDay = new Date(year, monthNumber, 0).getDate();
+    const today = getTodayString();
+    const selected = scheduleFocusDate || $("scheduleFocusDate")?.value || today;
+
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+    grid.innerHTML = "";
+
+    weekdays.forEach(day => {
+        const weekday = document.createElement("div");
+        weekday.className = "monthly-calendar-weekday";
+        weekday.textContent = day;
+        grid.appendChild(weekday);
+    });
+
+    for (let i = 0; i < firstWeekday; i++) {
+        const empty = document.createElement("div");
+        empty.className = "monthly-calendar-day outside";
+        grid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= lastDay; day++) {
+        const date = `${year}-${String(monthNumber).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const schedules = getSchedulesForDate(date);
+        const tasks = getTasksForDate(date);
+        const workCount = schedules.filter(item => item.category === "勤務").length;
+        const restCount = schedules.filter(item => item.category === "休み").length;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "monthly-calendar-day";
+
+        if (date === today) button.classList.add("today");
+        if (date === selected) button.classList.add("selected");
+
+        const badges = [];
+
+        if (schedules.length > 0) badges.push(`<span class="monthly-calendar-badge schedule">予${schedules.length}</span>`);
+        if (tasks.length > 0) badges.push(`<span class="monthly-calendar-badge task">タ${tasks.length}</span>`);
+        if (workCount > 0) badges.push(`<span class="monthly-calendar-badge work">勤${workCount}</span>`);
+        if (restCount > 0) badges.push(`<span class="monthly-calendar-badge rest">休</span>`);
+
+        button.innerHTML = `
+            <span class="monthly-calendar-date">${day}</span>
+            <div class="monthly-calendar-badges">${badges.join("")}</div>
+        `;
+
+        button.addEventListener("click", () => {
+            scheduleFocusDate = date;
+
+            if ($("scheduleFocusDate")) $("scheduleFocusDate").value = date;
+            if ($("scheduleDate")) $("scheduleDate").value = date;
+            if ($("taskDate")) $("taskDate").value = date;
+
+            renderFocusedScheduleList();
+            renderFocusedTaskList();
+            renderMonthlyCalendarGrid();
+        });
+
+        grid.appendChild(button);
+    }
+}
+
 function renderMonthlyPlanList() {
     const list = $("monthlyPlanList");
+
     if (!list) return;
 
     updateMonthPlanInputIfEmpty();
@@ -2174,6 +2472,8 @@ function renderMonthlyPlanList() {
     setText("monthScheduleCount", `${scheduleCount}件`);
     setText("monthTaskCount", `${taskCount}件`);
     setText("monthTaskDoneRate", taskCount === 0 ? "未計算" : `${Math.round(taskDone / taskCount * 100)}%`);
+
+    renderMonthlyCalendarGrid();
 }
 
 // ==============================
@@ -2185,6 +2485,7 @@ function getFormData() {
 
     fieldIds.forEach(id => {
         const element = $(id);
+
         if (element) data[id] = element.value;
     });
 
@@ -2197,6 +2498,7 @@ function setFormData(data) {
 
     fieldIds.forEach(id => {
         const element = $(id);
+
         if (element) element.value = data[id] ?? "";
     });
 
@@ -2212,6 +2514,7 @@ function setFormData(data) {
 function clearForm() {
     fieldIds.forEach(id => {
         const element = $(id);
+
         if (element) element.value = "";
     });
 
@@ -2229,6 +2532,7 @@ function applyDefaultPlanToForm() {
 
 function saveCurrentRecord() {
     const date = $("recordDate")?.value;
+
     if (!date) return;
 
     const records = getRecords();
@@ -2468,7 +2772,7 @@ function updateTodayAdvice() {
 
         adviceItems.push({
             text: hasNight
-                ? "今日は夜勤系の予定があります。学習量より、勤務前後の睡眠確保を優先してください。"
+                ? "今日は夜勤務系の予定があります。予定後の睡眠確保を優先してください。"
                 : "今日は勤務予定があります。勤務前後に重い予定やタスクを詰めすぎないでください。",
             className: "priority-middle"
         });
@@ -2489,7 +2793,7 @@ function updateTodayAdvice() {
     }
 
     if (sleepHours !== null && sleepHours < 5) {
-        mainText = "今日は回復優先です。重い予定・タスク・学習を増やさないでください。";
+        mainText = "今日は回復優先です。重い予定・タスク・取り組みを増やさないでください。";
         adviceItems.push({
             text: "実睡眠が5時間未満です。予定の変更余地があるなら、回復時間を先に確保してください。",
             className: "priority-high"
@@ -2563,7 +2867,7 @@ function updateCalculatedDisplays() {
 }
 
 // ==============================
-// 統計
+// 統計・分析
 // ==============================
 
 function buildPeriodStats(records, dates) {
@@ -2587,6 +2891,7 @@ function buildPeriodStats(records, dates) {
 
     dates.forEach(date => {
         const record = records[date];
+
         if (!record) return;
 
         recordDays += 1;
@@ -2631,6 +2936,7 @@ function buildPeriodStats(records, dates) {
 
             if (achievement.canJudgeAchievement) {
                 achievementTargetCount += 1;
+
                 if (achievement.achieved) achievedCount += 1;
             }
         }
@@ -2679,9 +2985,7 @@ function buildPlanStats(dates) {
             if (hours !== null) {
                 scheduleHours += hours;
 
-                if (schedule.category === "勤務") {
-                    workHours += hours;
-                }
+                if (schedule.category === "勤務") workHours += hours;
             }
 
             if (schedule.category === "勤務" && isNightTimeSchedule(schedule)) {
@@ -2691,6 +2995,7 @@ function buildPlanStats(dates) {
 
         dayTasks.forEach(task => {
             taskTotal += 1;
+
             if (task.done) taskDone += 1;
         });
     });
@@ -2718,6 +3023,7 @@ function updateWeeklySummary() {
 
 function setGapSummary(id, value) {
     const element = $(id);
+
     if (!element) return;
 
     element.classList.remove("good", "warning", "danger");
@@ -2751,6 +3057,7 @@ function updateAchievementSummary() {
     setGapSummary("weeklyAvgTimeInBedGap", averageNumber(timeInBedGaps));
 
     const element = $("weeklyAchievementRate");
+
     if (!element) return;
 
     element.classList.remove("good", "warning", "danger");
@@ -2828,6 +3135,76 @@ function buildWeeklyCompareText() {
         : comments.join("。");
 }
 
+function buildSubjectStats(days) {
+    const records = getRecords();
+    const dates = getRecentDates(days);
+    const subjectMap = {};
+    let totalMinutes = 0;
+    let recordedDays = 0;
+
+    dates.forEach(date => {
+        const record = records[date];
+
+        if (!record) return;
+
+        const minutes = getNumberOrNull(record.studyTotal);
+        const subject = record.mainSubject || "未選択";
+
+        if (minutes !== null) {
+            totalMinutes += minutes;
+
+            if (minutes > 0) {
+                recordedDays += 1;
+                subjectMap[subject] = (subjectMap[subject] || 0) + minutes;
+            }
+        }
+    });
+
+    const items = Object.entries(subjectMap)
+        .map(([subject, minutes]) => ({
+            subject,
+            minutes,
+            percent: totalMinutes > 0 ? minutes / totalMinutes * 100 : 0
+        }))
+        .sort((a, b) => b.minutes - a.minutes);
+
+    return { days, totalMinutes, recordedDays, items };
+}
+
+function buildSubSubjectStats(days) {
+    const records = getRecords();
+    const dates = getRecentDates(days);
+    const subMap = {};
+    let totalMinutes = 0;
+
+    dates.forEach(date => {
+        const record = records[date];
+
+        if (!record) return;
+
+        const minutes = getNumberOrNull(record.studyTotal);
+
+        if (minutes === null || minutes <= 0) return;
+
+        const parent = record.mainSubject || "未選択";
+        const sub = record.subSubject || "子項目未選択";
+        const key = `${parent} / ${sub}`;
+
+        totalMinutes += minutes;
+        subMap[key] = (subMap[key] || 0) + minutes;
+    });
+
+    const items = Object.entries(subMap)
+        .map(([subject, minutes]) => ({
+            subject,
+            minutes,
+            percent: totalMinutes > 0 ? minutes / totalMinutes * 100 : 0
+        }))
+        .sort((a, b) => b.minutes - a.minutes);
+
+    return { days, totalMinutes, items };
+}
+
 function buildWeeklyReviewData() {
     const records = getRecords();
     const dates = getRecentDates(7);
@@ -2876,7 +3253,7 @@ function buildWeeklyReviewData() {
 
     if (avgFatigue !== null && avgFatigue >= 7) {
         problems.push(`平均疲労は${avgFatigue.toFixed(1)}で高めです。`);
-        nextActions.push("休日や夜勤後に回復を先に置く日を作ってください。");
+        nextActions.push("休日や勤務後に回復を先に置く日を作ってください。");
     }
 
     if (goal.priorityItem) {
@@ -2928,6 +3305,7 @@ function buildWeeklyReviewData() {
 
 function renderWeeklyList(id, items) {
     const list = $(id);
+
     if (!list) return;
 
     list.innerHTML = "";
@@ -2980,6 +3358,7 @@ function updatePlanAnalysis() {
     }
 
     const comment = $("planAnalysisComment");
+
     if (!comment) return;
 
     if (stats.scheduleHours === 0 && stats.taskTotal === 0) {
@@ -2988,7 +3367,7 @@ function updatePlanAnalysis() {
     }
 
     if (stats.workHours >= 40) {
-        comment.textContent = `直近7日の勤務時間が${stats.workHours.toFixed(1)}時間です。睡眠・疲労・学習時間への影響を強く受ける可能性があります。`;
+        comment.textContent = `直近7日の勤務時間が${stats.workHours.toFixed(1)}時間です。睡眠・疲労・取り組み時間への影響を強く受ける可能性があります。`;
         return;
     }
 
@@ -3003,89 +3382,16 @@ function updatePlanAnalysis() {
     }
 
     if (stats.nightScheduleCount >= 1) {
-        comment.textContent = `夜勤系予定が${stats.nightScheduleCount}件あります。夜勤前後の睡眠と予定詰め込みに注意してください。`;
+        comment.textContent = `夜勤務系予定が${stats.nightScheduleCount}件あります。勤務前後の睡眠と予定詰め込みに注意してください。`;
         return;
     }
 
     comment.textContent = "予定・タスクの負荷は過大ではありません。優先項目に時間を配分できているか確認してください。";
 }
 
-// ==============================
-// 項目分析・習慣分析
-// ==============================
-
-function buildSubjectStats(days) {
-    const records = getRecords();
-    const dates = getRecentDates(days);
-    const subjectMap = {};
-
-    let totalMinutes = 0;
-    let recordedDays = 0;
-
-    dates.forEach(date => {
-        const record = records[date];
-        if (!record) return;
-
-        const minutes = getNumberOrNull(record.studyTotal);
-        const subject = record.mainSubject || "未選択";
-
-        if (minutes !== null) {
-            totalMinutes += minutes;
-
-            if (minutes > 0) {
-                recordedDays += 1;
-                subjectMap[subject] = (subjectMap[subject] || 0) + minutes;
-            }
-        }
-    });
-
-    const items = Object.entries(subjectMap)
-        .map(([subject, minutes]) => ({
-            subject,
-            minutes,
-            percent: totalMinutes > 0 ? minutes / totalMinutes * 100 : 0
-        }))
-        .sort((a, b) => b.minutes - a.minutes);
-
-    return { days, totalMinutes, recordedDays, items };
-}
-
-function buildSubSubjectStats(days) {
-    const records = getRecords();
-    const dates = getRecentDates(days);
-    const subMap = {};
-
-    let totalMinutes = 0;
-
-    dates.forEach(date => {
-        const record = records[date];
-        if (!record) return;
-
-        const minutes = getNumberOrNull(record.studyTotal);
-
-        if (minutes === null || minutes <= 0) return;
-
-        const parent = record.mainSubject || "未選択";
-        const sub = record.subSubject || "子項目未選択";
-        const key = `${parent} / ${sub}`;
-
-        totalMinutes += minutes;
-        subMap[key] = (subMap[key] || 0) + minutes;
-    });
-
-    const items = Object.entries(subMap)
-        .map(([subject, minutes]) => ({
-            subject,
-            minutes,
-            percent: totalMinutes > 0 ? minutes / totalMinutes * 100 : 0
-        }))
-        .sort((a, b) => b.minutes - a.minutes);
-
-    return { days, totalMinutes, items };
-}
-
 function renderSubjectAnalysisList(containerId, stats) {
     const container = $(containerId);
+
     if (!container) return;
 
     container.innerHTML = "";
@@ -3129,6 +3435,7 @@ function updateSubjectAnalysis() {
     renderSubjectAnalysisList("subjectAnalysis30", stats30);
 
     const comment = $("subjectAnalysisComment");
+
     if (!comment) return;
 
     if (stats7.items.length === 0) {
@@ -3166,6 +3473,7 @@ function updateSubSubjectAnalysis() {
     renderSubjectAnalysisList("subSubjectAnalysis30", stats30);
 
     const comment = $("subSubjectAnalysisComment");
+
     if (!comment) return;
 
     if (stats7.items.length === 0) {
@@ -3191,6 +3499,17 @@ function updateHabitAnalysis() {
     const date = $("recordDate")?.value || getTodayString();
 
     list.innerHTML = "";
+
+    if (habits.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "継続項目はまだありません。設定ページで追加してください。";
+        list.appendChild(empty);
+
+        if (comment) comment.textContent = "継続項目が追加されると、達成率や継続日数を表示します。";
+
+        return;
+    }
 
     let bestHabit = null;
     let bestStreak = 0;
@@ -3260,7 +3579,7 @@ function detectAutoAlerts() {
     const study = getNumberOrNull(record.studyTotal);
 
     if (sleep !== null && sleep < 5) {
-        alerts.push(makeAlert("high", "今日の実睡眠が5時間未満です", `今日の実睡眠は${sleep.toFixed(1)}時間です。`, "重い予定・タスク・学習を抑え、回復を優先してください。", 100));
+        alerts.push(makeAlert("high", "今日の実睡眠が5時間未満です", `今日の実睡眠は${sleep.toFixed(1)}時間です。`, "重い予定・タスク・取り組みを抑え、回復を優先してください。", 100));
     }
 
     if (fatigue !== null && fatigue >= 8) {
@@ -3287,7 +3606,7 @@ function detectAutoAlerts() {
         alerts.push(makeAlert("medium", "集中力があるのに取り組み0分です", "状態は悪くないのに着手できていない可能性があります。", "5〜15分だけでも優先項目に触れてください。", 65));
     }
 
-    if (getHabitAchievementCount(date) === 0 && getHabits().length > 0) {
+    if (getHabits().length > 0 && getHabitAchievementCount(date) === 0) {
         alerts.push(makeAlert("medium", "今日は継続項目が未達成です", "小さい習慣がまだ記録されていません。", "1つだけでも記録してください。", 60));
     }
 
@@ -3314,7 +3633,7 @@ function getAutoAlertConclusion(alerts) {
     const high = alerts.filter(alert => alert.level === "high").length;
     const medium = alerts.filter(alert => alert.level === "medium").length;
 
-    if (high >= 2) return "今日は回復優先です。予定・タスク・学習量を増やさないでください。";
+    if (high >= 2) return "今日は回復優先です。予定・タスク・取り組み量を増やさないでください。";
     if (high === 1) return "今日は慎重運用です。最低限の継続と回復を優先してください。";
     if (medium >= 3) return "生活リズムに注意点があります。予定とタスクを詰めすぎない方が安全です。";
     if (medium >= 1) return "軽い注意点があります。睡眠予定とタスク量を確認してください。";
@@ -3340,6 +3659,7 @@ function renderAlertItem(alert) {
 
 function updateAutoAlerts() {
     const list = $("autoAlertList");
+
     if (!list) return;
 
     const alerts = detectAutoAlerts();
@@ -3370,6 +3690,7 @@ function updateAutoAlerts() {
 
 function renderSimpleFactor(containerId, lines) {
     const container = $(containerId);
+
     if (!container) return;
 
     container.innerHTML = "";
@@ -3381,7 +3702,7 @@ function renderSimpleFactor(containerId, lines) {
         item.innerHTML = `
             <div>
                 <span class="factor-name">${escapeHtml(line)}</span>
-                <span class="factor-detail">v8.5簡易分析</span>
+                <span class="factor-detail">v9.0簡易分析</span>
             </div>
             <span class="factor-score">確認</span>
         `;
@@ -3402,7 +3723,7 @@ function updateCorrelationAnalysis() {
 
     setText(
         "correlationInsight",
-        "v8.5では、予定・タスク・勤務時間も分析対象に入れています。まずは予定過多・勤務時間・タスク完了率と睡眠・疲労・集中力の関係を確認します。"
+        "v9.0では、予定・タスク・勤務時間も分析対象に入れています。まずは予定過多・勤務時間・タスク完了率と睡眠・疲労・集中力の関係を確認します。"
     );
 
     renderSimpleFactor("studyFactorRanking", [
@@ -3414,7 +3735,7 @@ function updateCorrelationAnalysis() {
     renderSimpleFactor("focusFactorRanking", [
         `平均集中力：${averageText(stats.focusValues, "")}`,
         `平均睡眠：${averageText(stats.sleepValues, "時間")}`,
-        `夜勤系予定：${planStats.nightScheduleCount}件`
+        `夜勤務系予定：${planStats.nightScheduleCount}件`
     ]);
 
     renderSimpleFactor("riskFactorRanking", [
@@ -3424,6 +3745,7 @@ function updateCorrelationAnalysis() {
     ]);
 
     const list = $("correlationList");
+
     if (!list) return;
 
     list.innerHTML = "";
@@ -3479,6 +3801,7 @@ function getCompletenessLabel(completeness) {
 
 function renderRecordCalendar() {
     const calendar = $("recordCalendar");
+
     if (!calendar) return;
 
     const records = getRecords();
@@ -3526,6 +3849,7 @@ function filterDates(dates) {
 
 function renderHistory() {
     const historyList = $("historyList");
+
     if (!historyList) return;
 
     const records = getRecords();
@@ -3606,6 +3930,7 @@ function buildSeriesFromRecords(dates, key) {
 
     return dates.map(date => {
         const record = records[date];
+
         if (!record) return null;
 
         return getNumberOrNull(record[key]);
@@ -3617,9 +3942,11 @@ function buildGapSeries(dates, type) {
 
     return dates.map(date => {
         const record = records[date];
+
         if (!record) return null;
 
         const achievement = calculateAchievementFromRecord(record);
+
         if (!achievement) return null;
 
         return type === "bedtime" ? achievement.bedtimeGap : achievement.wakeTimeGap;
@@ -3628,6 +3955,7 @@ function buildGapSeries(dates, type) {
 
 function resizeCanvasForDisplay(canvas) {
     const rect = canvas.getBoundingClientRect();
+
     if (rect.width === 0) return;
 
     const ratio = window.devicePixelRatio || 1;
@@ -3643,6 +3971,7 @@ function resizeCanvasForDisplay(canvas) {
 
 function drawEmptyChart(canvasId, message) {
     const canvas = $(canvasId);
+
     if (!canvas) return;
 
     resizeCanvasForDisplay(canvas);
@@ -3661,6 +3990,7 @@ function drawEmptyChart(canvasId, message) {
 
 function drawLineChart(config) {
     const canvas = $(config.canvasId);
+
     if (!canvas) return;
 
     resizeCanvasForDisplay(canvas);
@@ -3890,6 +4220,7 @@ function updateCharts() {
 function setupRatingButtons() {
     ratingFields.forEach(field => {
         const container = document.querySelector(`.rating-buttons[data-target="${field.id}"]`);
+
         if (!container) return;
 
         container.innerHTML = "";
@@ -3904,6 +4235,7 @@ function setupRatingButtons() {
 
             button.addEventListener("click", () => {
                 const input = $(field.id);
+
                 if (!input) return;
 
                 input.value = input.value === String(value) ? "" : String(value);
@@ -4023,7 +4355,7 @@ function buildPeriodSummaryText(title, dates, stats) {
         `取り組んだ日数：${stats.studyDays}日`,
         `予定時間：${planStats.scheduleHours.toFixed(1)}時間`,
         `勤務時間：${planStats.workHours.toFixed(1)}時間`,
-        `夜勤系予定：${planStats.nightScheduleCount}件`,
+        `夜勤務系予定：${planStats.nightScheduleCount}件`,
         `タスク完了率：${planStats.taskDoneRate === null ? "未計算" : planStats.taskDoneRate.toFixed(0) + "%"}`
     ].join("\n");
 }
@@ -4076,7 +4408,7 @@ function buildPlanSummaryText(days) {
         `【直近${days}日の予定・タスク】`,
         `予定時間：${stats.scheduleHours.toFixed(1)}時間`,
         `勤務時間：${stats.workHours.toFixed(1)}時間`,
-        `夜勤系予定：${stats.nightScheduleCount}件`,
+        `夜勤務系予定：${stats.nightScheduleCount}件`,
         `タスク件数：${stats.taskTotal}件`,
         `タスク完了：${stats.taskDone}件`,
         `タスク完了率：${stats.taskDoneRate === null ? "未計算" : stats.taskDoneRate.toFixed(0) + "%"}`
@@ -4296,6 +4628,7 @@ function saveSettingsFromForm() {
     if ($("plannedWakeTime") && !$("plannedWakeTime").value) $("plannedWakeTime").value = settings.defaultPlannedWakeTime;
 
     saveCurrentRecord();
+    updateSetupChecklist();
     alert("基本睡眠予定を保存しました。");
 }
 
@@ -4337,12 +4670,14 @@ function saveGoalFromForm() {
     setGoal(goal);
     updateGoalStatus();
     updateAllDisplays();
+    updateSetupChecklist();
     updateSaveStatus("目標設定を保存しました", false);
     alert("目標設定を保存しました。");
 }
 
 function updateGoalStatus() {
     const status = $("goalStatus");
+
     if (!status) return;
 
     const goal = getGoal();
@@ -4360,6 +4695,71 @@ function updateGoalStatus() {
 }
 
 // ==============================
+// 初回セットアップ
+// ==============================
+
+function buildSetupItems() {
+    const goal = getGoal();
+    const subjects = getSubjectConfigs();
+    const habits = getHabits();
+    const templates = getScheduleTemplates();
+
+    return [
+        {
+            label: "目標を設定する",
+            done: Boolean(goal.title || goal.reason || goal.priorityItem || goal.minimumMinutes || goal.standardMinutes)
+        },
+        {
+            label: "取り組み項目を追加する",
+            done: subjects.length > 0
+        },
+        {
+            label: "継続項目を追加する",
+            done: habits.length > 0
+        },
+        {
+            label: "予定テンプレートを追加する",
+            done: templates.length > 0
+        }
+    ];
+}
+
+function renderSetupChecklist(containerId) {
+    const container = $(containerId);
+
+    if (!container) return;
+
+    const items = buildSetupItems();
+
+    container.innerHTML = "";
+
+    items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = `setup-item ${item.done ? "done" : ""}`;
+
+        row.innerHTML = `
+            <span class="setup-mark">${item.done ? "✓" : "□"}</span>
+            <span>${escapeHtml(item.label)}</span>
+        `;
+
+        container.appendChild(row);
+    });
+}
+
+function updateSetupChecklist() {
+    renderSetupChecklist("setupChecklist");
+    renderSetupChecklist("settingsSetupChecklist");
+
+    const card = $("initialSetupCard");
+
+    if (!card) return;
+
+    const allDone = buildSetupItems().every(item => item.done);
+
+    card.style.display = allDone ? "none" : "";
+}
+
+// ==============================
 // 削除・バックアップ
 // ==============================
 
@@ -4374,6 +4774,7 @@ function updateDeleteButton() {
 
 function deleteCurrentRecord() {
     const date = $("recordDate")?.value;
+
     if (!date) return;
 
     const records = getRecords();
@@ -4402,7 +4803,7 @@ function deleteCurrentRecord() {
 function exportData() {
     const backupData = {
         appName: "Life Growth Analyzer",
-        version: "8.5",
+        version: "9.0",
         exportedAt: new Date().toISOString(),
         settings: getSettings(),
         subjects: getSubjectConfigs(),
@@ -4411,6 +4812,7 @@ function exportData() {
         habitRecords: getHabitRecords(),
         schedules: getSchedules(),
         tasks: getTasks(),
+        scheduleTemplates: getScheduleTemplates(),
         records: getRecords()
     };
 
@@ -4457,11 +4859,13 @@ function importDataFromFile(file) {
             if (imported.habitRecords) setHabitRecords(imported.habitRecords);
             if (imported.schedules) setSchedules(imported.schedules);
             if (imported.tasks) setTasks(imported.tasks);
+            if (imported.scheduleTemplates) setScheduleTemplates(imported.scheduleTemplates);
 
             loadSettingsToForm();
             loadSubjectsToUI();
             loadGoalToForm();
             renderHabitSettingsList();
+            renderScheduleTemplateList();
 
             const dates = Object.keys(getRecords()).sort().reverse();
             const nextDate = dates[0] || getTodayString();
@@ -4469,6 +4873,7 @@ function importDataFromFile(file) {
             if ($("recordDate")) $("recordDate").value = nextDate;
 
             loadRecord(nextDate);
+            updateSetupChecklist();
             updateSaveStatus(`復元しました：${count}件`, false);
 
             alert("復元が完了しました。");
@@ -4488,6 +4893,7 @@ function importDataFromFile(file) {
 function setupInputEvents() {
     fieldIds.forEach(id => {
         const element = $(id);
+
         if (!element) return;
 
         element.addEventListener("input", () => {
@@ -4496,9 +4902,7 @@ function setupInputEvents() {
         });
 
         element.addEventListener("change", () => {
-            if (id === "mainSubject") {
-                updateSubSubjectSelectOptions("");
-            }
+            if (id === "mainSubject") updateSubSubjectSelectOptions("");
 
             updateRatingDisplays();
             saveCurrentRecord();
@@ -4520,6 +4924,7 @@ function setupScheduleFocusEvents() {
     if ($("scheduleFocusDate")) {
         $("scheduleFocusDate").addEventListener("change", () => {
             const date = $("scheduleFocusDate").value;
+
             if (!date) return;
 
             scheduleFocusDate = date;
@@ -4529,6 +4934,7 @@ function setupScheduleFocusEvents() {
 
             renderFocusedScheduleList();
             renderFocusedTaskList();
+            renderMonthlyCalendarGrid();
         });
     }
 
@@ -4539,9 +4945,11 @@ function setupScheduleFocusEvents() {
             if ($("scheduleFocusDate")) $("scheduleFocusDate").value = scheduleFocusDate;
             if ($("scheduleDate")) $("scheduleDate").value = scheduleFocusDate;
             if ($("taskDate")) $("taskDate").value = scheduleFocusDate;
+            if ($("monthPlanInput")) $("monthPlanInput").value = getMonthString(scheduleFocusDate);
 
             renderFocusedScheduleList();
             renderFocusedTaskList();
+            renderMonthlyCalendarGrid();
         });
     }
 
@@ -4559,6 +4967,7 @@ function setupScheduleFocusEvents() {
 
 function setupScheduleEvents() {
     if ($("saveScheduleButton")) $("saveScheduleButton").addEventListener("click", saveScheduleFromForm);
+    if ($("saveScheduleAsTemplateButton")) $("saveScheduleAsTemplateButton").addEventListener("click", saveScheduleAsTemplate);
     if ($("duplicateScheduleButton")) $("duplicateScheduleButton").addEventListener("click", duplicateScheduleFromForm);
     if ($("clearScheduleFormButton")) $("clearScheduleFormButton").addEventListener("click", clearScheduleForm);
     if ($("applyScheduleToRecordButton")) $("applyScheduleToRecordButton").addEventListener("click", applyScheduleToRecord);
@@ -4569,12 +4978,11 @@ function setupScheduleEvents() {
     }
 
     if ($("monthPlanInput")) {
-        $("monthPlanInput").addEventListener("change", renderMonthlyPlanList);
+        $("monthPlanInput").addEventListener("change", () => {
+            renderMonthlyPlanList();
+            renderMonthlyCalendarGrid();
+        });
     }
-
-    document.querySelectorAll(".template-button").forEach(button => {
-        button.addEventListener("click", () => applyScheduleTemplate(button.dataset.templateType));
-    });
 }
 
 function setupTaskEvents() {
@@ -4709,6 +5117,7 @@ function setupDeleteEvent() {
 
 function updateAllDisplays() {
     updateCalculatedDisplays();
+    renderScheduleTemplateList();
     renderTodayScheduleList();
     renderTodayTaskList();
     renderFocusedScheduleList();
@@ -4728,6 +5137,7 @@ function updateAllDisplays() {
     updateWeeklyReview();
     updateCharts();
     updateDeleteButton();
+    updateSetupChecklist();
 }
 
 // ==============================
@@ -4748,6 +5158,7 @@ window.addEventListener("load", () => {
     loadSubjectsToUI();
     loadGoalToForm();
     renderHabitSettingsList();
+    renderScheduleTemplateList();
     setupRatingButtons();
 
     const lastDate = localStorage.getItem(LAST_DATE_KEY);
@@ -4785,5 +5196,5 @@ window.addEventListener("load", () => {
     showPage("todayPage");
     updateAllDisplays();
 
-    console.log("Life Growth Analyzer v8.5 初期化完了");
+    console.log("Life Growth Analyzer v9.0 初期化完了");
 });

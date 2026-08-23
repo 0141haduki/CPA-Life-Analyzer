@@ -1,4 +1,4 @@
-/* Life Growth Analyzer v8.5 */
+/* Life Growth Analyzer v9.0 */
 
 * {
     box-sizing: border-box;
@@ -34,7 +34,7 @@ body {
     color: #d1d5db;
 }
 
-/* ページ切り替えタブ */
+/* ページ切り替え */
 .page-tabs {
     position: sticky;
     top: 0;
@@ -79,7 +79,6 @@ body {
     padding: 16px;
 }
 
-/* アプリ内ページ */
 .app-page {
     display: none;
 }
@@ -174,7 +173,7 @@ textarea {
     color: #6b7280;
 }
 
-/* 汎用ボタン */
+/* ボタン */
 .primary-button,
 .file-label {
     display: block;
@@ -265,6 +264,62 @@ textarea {
     color: #334155;
 }
 
+/* 初回セットアップ */
+.setup-card {
+    border-left: 5px solid #6366f1;
+    background: #eef2ff;
+}
+
+.setup-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.setup-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    background: white;
+    font-weight: 800;
+    color: #3730a3;
+}
+
+.setup-item.done {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.setup-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.setup-item.done .setup-mark {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.setup-action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
 /* 今日の予定・タスク */
 .today-plan-card {
     border-left: 5px solid #0284c7;
@@ -283,6 +338,7 @@ textarea {
     border: 1px solid #bae6fd;
     border-radius: 12px;
     background: white;
+    margin-top: 12px;
 }
 
 .today-plan-box h3,
@@ -396,37 +452,110 @@ textarea {
 }
 
 /* 予定ページ */
-.schedule-quick-card {
+.schedule-day-card {
+    border-left: 5px solid #0ea5e9;
+    background: #eff6ff;
+}
+
+.schedule-template-card {
     border-left: 5px solid #f97316;
     background: #fff7ed;
 }
 
-.template-button-grid {
+.schedule-template-list {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    margin-top: 14px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 16px;
 }
 
-.template-button {
-    min-height: 46px;
+.schedule-template-item {
+    padding: 12px;
     border: 1px solid #fed7aa;
-    border-radius: 12px;
+    border-radius: 14px;
     background: white;
+}
+
+.schedule-template-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.schedule-template-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 900;
     color: #9a3412;
+}
+
+.schedule-template-meta {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.schedule-template-memo {
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #fff7ed;
+    border: 1px solid #ffedd5;
+    color: #7c2d12;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.schedule-template-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.template-use-button,
+.template-direct-add-button,
+.template-edit-button {
+    min-height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: #f97316;
+    color: white;
     font-size: 14px;
     font-weight: 900;
     cursor: pointer;
 }
 
-.template-button:hover {
-    background: #ffedd5;
-    border-color: #f97316;
+.template-use-button:hover,
+.template-direct-add-button:hover,
+.template-edit-button:hover {
+    background: #ea580c;
 }
 
-.schedule-day-card {
-    border-left: 5px solid #0ea5e9;
-    background: #eff6ff;
+.template-edit-button {
+    background: #2563eb;
+}
+
+.template-edit-button:hover {
+    background: #1d4ed8;
+}
+
+.template-delete-button {
+    min-height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: #dc2626;
+    color: white;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.template-delete-button:hover {
+    background: #b91c1c;
 }
 
 .schedule-card {
@@ -506,6 +635,92 @@ textarea {
     text-decoration: line-through;
 }
 
+/* 月間カレンダー */
+.monthly-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.monthly-calendar-weekday {
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #0f766e;
+}
+
+.monthly-calendar-day {
+    min-height: 82px;
+    padding: 8px 6px;
+    border: 1px solid #ccfbf1;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    text-align: left;
+}
+
+.monthly-calendar-day:hover {
+    border-color: #0f766e;
+    background: #ecfdf5;
+}
+
+.monthly-calendar-day.outside {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.monthly-calendar-day.today {
+    box-shadow: 0 0 0 2px #0ea5e9 inset;
+}
+
+.monthly-calendar-day.selected {
+    box-shadow: 0 0 0 3px #0f766e inset;
+}
+
+.monthly-calendar-date {
+    display: block;
+    font-size: 14px;
+    font-weight: 900;
+    color: #134e4a;
+}
+
+.monthly-calendar-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.monthly-calendar-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.monthly-calendar-badge.schedule {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.monthly-calendar-badge.task {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.monthly-calendar-badge.work {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.monthly-calendar-badge.rest {
+    background: #dcfce7;
+    color: #166534;
+}
+
 /* 今日のアドバイス */
 .advice-card {
     border-left: 5px solid #14b8a6;
@@ -546,7 +761,7 @@ textarea {
     color: #15803d;
 }
 
-/* 今日の継続項目 */
+/* 継続項目 */
 .habit-record-card {
     border-left: 5px solid #22c55e;
     background: #f0fdf4;
@@ -1111,52 +1326,14 @@ textarea {
     white-space: nowrap;
 }
 
-.correlation-item.strong {
-    border-left: 6px solid #7c3aed;
-    background: #faf5ff;
-}
-
 .correlation-item.middle {
     border-left: 6px solid #2563eb;
     background: #eff6ff;
 }
 
-.correlation-item.weak {
-    border-left: 6px solid #64748b;
-    background: #f8fafc;
-}
-
-.correlation-item.insufficient {
-    border-left: 6px solid #cbd5e1;
-    background: #f8fafc;
-}
-
-.correlation-level.strong {
-    background: #ede9fe;
-    color: #5b21b6;
-}
-
 .correlation-level.middle {
     background: #dbeafe;
     color: #1d4ed8;
-}
-
-.correlation-level.weak {
-    background: #e2e8f0;
-    color: #334155;
-}
-
-.correlation-level.insufficient {
-    background: #f1f5f9;
-    color: #64748b;
-}
-
-.correlation-r {
-    display: inline-block;
-    margin-left: 6px;
-    font-size: 13px;
-    font-weight: 800;
-    color: #111827;
 }
 
 .correlation-warning {
@@ -1225,35 +1402,6 @@ textarea {
     font-size: 13px;
     color: #334155;
     font-weight: 700;
-}
-
-.habit-effect-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.habit-effect-item {
-    padding: 9px 10px;
-    border-radius: 10px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-}
-
-.habit-effect-title {
-    display: block;
-    font-size: 13px;
-    font-weight: 900;
-    color: #365314;
-}
-
-.habit-effect-detail {
-    display: block;
-    margin-top: 2px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #64748b;
 }
 
 /* 項目別分析 */
@@ -1477,7 +1625,7 @@ textarea {
     color: #64748b;
 }
 
-/* カレンダー */
+/* 記録カレンダー */
 .calendar-card {
     border-left: 5px solid #0ea5e9;
 }
@@ -1731,16 +1879,6 @@ textarea {
     font-size: 14px;
 }
 
-.history-detail.warning {
-    color: #92400e;
-    font-weight: 700;
-}
-
-.history-detail.good {
-    color: #15803d;
-    font-weight: 700;
-}
-
 /* AI */
 .ai-text-card {
     border-left: 5px solid #6366f1;
@@ -1842,8 +1980,8 @@ textarea {
         grid-template-columns: 1fr 1fr 1fr;
     }
 
-    .template-button-grid {
-        grid-template-columns: repeat(5, 1fr);
+    .schedule-template-list {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -1855,11 +1993,21 @@ textarea {
     .page-tab {
         font-size: 12px;
     }
+
+    .monthly-calendar-grid {
+        gap: 6px;
+    }
+
+    .monthly-calendar-day {
+        min-height: 72px;
+        padding: 7px 5px;
+    }
 }
 
 @media (max-width: 600px) {
     .two-column,
-    .compact-form-grid {
+    .compact-form-grid,
+    .setup-action-grid {
         grid-template-columns: 1fr;
     }
 
@@ -1910,6 +2058,14 @@ textarea {
     .today-task-row .inline-small-button,
     .today-task-row .inline-danger-button {
         grid-column: 1 / -1;
+    }
+
+    .schedule-template-header {
+        flex-direction: column;
+    }
+
+    .schedule-template-actions {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1975,12 +2131,27 @@ textarea {
         font-size: 10px;
     }
 
-    .template-button-grid {
-        grid-template-columns: 1fr 1fr;
+    .monthly-calendar-grid {
+        gap: 5px;
     }
 
-    .template-button {
-        min-height: 44px;
-        font-size: 13px;
+    .monthly-calendar-weekday {
+        font-size: 11px;
+        padding: 6px 2px;
+    }
+
+    .monthly-calendar-day {
+        min-height: 64px;
+        padding: 6px 4px;
+        border-radius: 10px;
+    }
+
+    .monthly-calendar-date {
+        font-size: 12px;
+    }
+
+    .monthly-calendar-badge {
+        font-size: 9px;
+        padding: 1px 5px;
     }
 }
